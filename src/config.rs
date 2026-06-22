@@ -8,6 +8,10 @@ pub const BONEYARD_SOURCE_ID: &str = "keykey-boneyard-bootstrap";
 pub const BONEYARD_SOURCE_NAME: &str = "KeyKey Boneyard bootstrap data";
 pub const BONEYARD_VENDOR_DB_PATH: &str =
     "sources/keykey-boneyard-bootstrap/vendor/KeyKeySource.db";
+pub const PUNCTUATION_SOURCE_ID: &str = "keykey-punctuations-cin";
+pub const PUNCTUATION_SOURCE_NAME: &str = "KeyKey BPMF punctuation table";
+pub const PUNCTUATION_VENDOR_PATH: &str =
+    "sources/keykey-punctuations-cin/vendor/bpmf-punctuations.cin";
 pub const BPMF_EXT_SOURCE_ID: &str = "bpmf-ext-cin";
 pub const BPMF_EXT_SOURCE_NAME: &str = "Public domain extended BPMF character table";
 pub const BPMF_EXT_VENDOR_PATH: &str = "sources/bpmf-ext-cin/vendor/bpmf-ext.cin";
@@ -69,7 +73,7 @@ pub struct Config {
 
 pub fn load() -> Result<Config> {
     let root = env::current_dir().context("read current directory")?;
-    let release_version = env_or("LEXICON_VERSION", "2026.06.5");
+    let release_version = env_or("LEXICON_VERSION", "2026.06.6");
     let language_model_version = format!("chiaki-modern-{release_version}");
     let minimum_app_version = env_or("MINIMUM_APP_VERSION", "0.1.0");
     let generated_at = env::var("GENERATED_AT")

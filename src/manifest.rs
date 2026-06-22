@@ -1,7 +1,8 @@
 use crate::config::{
     Config, BONEYARD_SOURCE_ID, BONEYARD_SOURCE_NAME, BPMF_EXT_SOURCE_ID, BPMF_EXT_SOURCE_NAME,
     DATABASE_SCHEMA_VERSION, LIBCHEWING_SOURCE_ID, LIBCHEWING_SOURCE_NAME, OVERLAY_SOURCE_ID,
-    OVERLAY_SOURCE_NAME, RIME_ESSAY_SOURCE_ID, RIME_ESSAY_SOURCE_NAME,
+    OVERLAY_SOURCE_NAME, PUNCTUATION_SOURCE_ID, PUNCTUATION_SOURCE_NAME, RIME_ESSAY_SOURCE_ID,
+    RIME_ESSAY_SOURCE_NAME,
 };
 use crate::db;
 use crate::files::{file_info, sha256_file};
@@ -30,6 +31,17 @@ pub fn release_metadata(
             "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / Chiaki KeyKey maintainers",
             &paths.boneyard_inventory,
             db::stats_for_source_rows(source_rows, "YahooKeyKey-Source-1.1.2528/"),
+        )?,
+        release_source(
+            PUNCTUATION_SOURCE_ID,
+            PUNCTUATION_SOURCE_NAME,
+            "BSD-3-Clause-style",
+            "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / Chiaki KeyKey maintainers",
+            &paths.punctuation_inventory,
+            db::stats_for_source_rows(
+                source_rows,
+                "sources/keykey-punctuations-cin/vendor/bpmf-punctuations.cin",
+            ),
         )?,
         release_source(
             LIBCHEWING_SOURCE_ID,
@@ -108,6 +120,16 @@ pub fn manifest(
             "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / Chiaki KeyKey maintainers",
             &paths.boneyard_inventory,
             100,
+        )?,
+        manifest_source(
+            PUNCTUATION_SOURCE_ID,
+            PUNCTUATION_SOURCE_NAME,
+            "https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-punctuations.cin",
+            "cin",
+            "BSD-3-Clause-style",
+            "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / Chiaki KeyKey maintainers",
+            &paths.punctuation_inventory,
+            120,
         )?,
         manifest_source(
             LIBCHEWING_SOURCE_ID,

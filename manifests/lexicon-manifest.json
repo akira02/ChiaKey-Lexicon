@@ -2,37 +2,37 @@
   "artifacts": [
     {
       "database_schema_version": 1,
-      "filename": "KeyKeySource-2026.06.5.db",
+      "filename": "KeyKeySource-2026.06.6.db",
       "id": "smart-mandarin-db",
       "kind": "keykey-source-db",
-      "language_model_version": "chiaki-modern-2026.06.5",
-      "sha256": "44fb2405ca89deb2004f78402ac77390fd35ba54ab4f196d5245fba5542e7cde",
-      "size": 46047232,
-      "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.5/KeyKeySource-2026.06.5.db"
+      "language_model_version": "chiaki-modern-2026.06.6",
+      "sha256": "809cec25bf66daf1ad71e3ee0f2c709a1da8849dd64b26082f0935fce2512102",
+      "size": 46039040,
+      "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.6/KeyKeySource-2026.06.6.db"
     },
     {
       "database_schema_version": 1,
-      "filename": "KeyKeySource-2026.06.5.json",
+      "filename": "KeyKeySource-2026.06.6.json",
       "id": "smart-mandarin-metadata",
       "kind": "metadata",
-      "language_model_version": "chiaki-modern-2026.06.5",
-      "sha256": "577ebaf8564279f5097dfc406adac866db6054cc4eda6ba13683a6b43d139cb2",
-      "size": 15233,
-      "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.5/KeyKeySource-2026.06.5.json"
+      "language_model_version": "chiaki-modern-2026.06.6",
+      "sha256": "2cff2b3eaa2c2431f0d39b30f6d15e645a12cc0b69d07674630ced32f62d52b9",
+      "size": 16019,
+      "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.6/KeyKeySource-2026.06.6.json"
     },
     {
       "database_schema_version": 1,
       "filename": "SHA256SUMS",
       "id": "smart-mandarin-checksums",
       "kind": "checksum",
-      "language_model_version": "chiaki-modern-2026.06.5",
-      "sha256": "96a394aa4b0a6a149f5fbc3b801bd07d0d388c2e1476368aec284f8e530438cf",
+      "language_model_version": "chiaki-modern-2026.06.6",
+      "sha256": "0795511c5522ce9f36e1371806f5b195ac6d7c9a9f0606ef0913d0a38f06e048",
       "size": 186,
-      "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.5/SHA256SUMS"
+      "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.6/SHA256SUMS"
     }
   ],
   "database_schema_version": 1,
-  "generated_at": "2026-06-22T10:04:58Z",
+  "generated_at": "2026-06-22T10:51:05Z",
   "minimum_app_version": "0.1.0",
   "schema": 1,
   "sources": [
@@ -46,6 +46,17 @@
       "priority": 100,
       "sha256": "175bec368615dc219e76c8d4941e96054126500dae1d9b4737559f3413a085ab",
       "url": "https://github.com/vChewing/KeyKey-Boneyard"
+    },
+    {
+      "attribution": "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / Chiaki KeyKey maintainers",
+      "enabled": true,
+      "format": "cin",
+      "id": "keykey-punctuations-cin",
+      "license": "BSD-3-Clause-style",
+      "name": "KeyKey BPMF punctuation table",
+      "priority": 120,
+      "sha256": "c1861f127d7d1c3f3dee84faf2039df1f8e66e588a6d6f5f5b16eab74391c38a",
+      "url": "https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-punctuations.cin"
     },
     {
       "attribution": "libchewing Core Team",
@@ -92,5 +103,5 @@
       "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/blob/main/sources/chiaki-modern-overlay/phrases.tsv"
     }
   ],
-  "version": "2026.06.5"
+  "version": "2026.06.6"
 }

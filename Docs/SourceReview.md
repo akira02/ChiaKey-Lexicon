@@ -38,6 +38,32 @@ The manifest records the SHA-256 of that inventory file, not a single raw upstre
 
 `source-inventory.sha256` is kept as provenance for the vendored cooked database. The full KeyKey Boneyard tree is not copied into this repository.
 
+## Included Starting in 2026.06.6
+
+### keykey-punctuations-cin
+
+- Name: KeyKey BPMF punctuation table
+- Local source: `sources/keykey-punctuations-cin/vendor/bpmf-punctuations.cin`
+- Upstream source file: <https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-punctuations.cin>
+- License: BSD-3-Clause-style Yahoo! KeyKey upstream license
+- Attribution: Yahoo! Inc., OpenVanilla contributors, KeyKey Boneyard / Chiaki KeyKey maintainers
+- Redistribution decision: included for public releases starting in `2026.06.6`
+
+This source restores the original KeyKey runtime punctuation lookup rows. The release builder imports only rows inside `%chardef` whose keys start with `_punctuation_` or `_ctrl_`, and writes them to both `unigrams` and `Mandarin-bpmf-cin`.
+
+These rows are required for Smart Mandarin punctuation handling, for example:
+
+```text
+_punctuation_<          ，
+_punctuation_Standard_< ，
+```
+
+The generated source inventory is stored at:
+
+```text
+sources/keykey-punctuations-cin/source-inventory.sha256
+```
+
 ## Excluded from v1
 
 These sources are useful references, but they are not included as raw sources in the first release artifacts:

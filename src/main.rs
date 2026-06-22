@@ -7,6 +7,7 @@ mod importers;
 mod manifest;
 mod paths;
 mod phonetics;
+mod punctuations;
 mod release;
 mod types;
 

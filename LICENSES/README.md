@@ -25,6 +25,13 @@ Unknown-license data must not be included in public release artifacts.
 - Review notes: [Docs/SourceReview.md](../Docs/SourceReview.md)
 - Release decision: included in `2026.06.1`
 
+### KeyKey BPMF punctuation table
+
+- Source id: `keykey-punctuations-cin`
+- License file: [YahooKeyKey-BSD-3-Clause.txt](YahooKeyKey-BSD-3-Clause.txt)
+- Review notes: [Docs/SourceReview.md](../Docs/SourceReview.md)
+- Release decision: included starting in `2026.06.6`
+
 ### Chiaki modern overlay phrases
 
 - Source id: `chiaki-modern-overlay`

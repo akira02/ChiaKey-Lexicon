@@ -300,7 +300,9 @@ pub fn load_primary_character_readings(conn: &Connection) -> Result<HashMap<Stri
     let mut readings = HashMap::new();
     for row in rows {
         let (qstring, phrase) = row?;
-        if phrase.chars().count() == 1 {
+        if phrase.chars().count() == 1
+            && !(qstring.starts_with("_punctuation_") || qstring.starts_with("_ctrl_"))
+        {
             readings.entry(phrase).or_insert(qstring);
         }
     }

@@ -140,6 +140,30 @@ jobs:
             exit 1
           fi
 
+          punctuation="$(sqlite3 "$db_name" "select current from unigrams where qstring = '_punctuation_<' order by probability desc, current limit 1;")"
+          if [[ "$punctuation" != "，" ]]; then
+            echo "Missing _punctuation_< full-width comma in unigrams: ${punctuation}" >&2
+            exit 1
+          fi
+
+          standard_punctuation="$(sqlite3 "$db_name" "select current from unigrams where qstring = '_punctuation_Standard_<' order by probability desc, current limit 1;")"
+          if [[ "$standard_punctuation" != "，" ]]; then
+            echo "Missing _punctuation_Standard_< full-width comma in unigrams: ${standard_punctuation}" >&2
+            exit 1
+          fi
+
+          cin_punctuation="$(sqlite3 "$db_name" "select value from 'Mandarin-bpmf-cin' where key = '_punctuation_<' order by value limit 1;")"
+          if [[ "$cin_punctuation" != "，" ]]; then
+            echo "Missing _punctuation_< full-width comma in Mandarin-bpmf-cin: ${cin_punctuation}" >&2
+            exit 1
+          fi
+
+          cin_standard_punctuation="$(sqlite3 "$db_name" "select value from 'Mandarin-bpmf-cin' where key = '_punctuation_Standard_<' order by value limit 1;")"
+          if [[ "$cin_standard_punctuation" != "，" ]]; then
+            echo "Missing _punctuation_Standard_< full-width comma in Mandarin-bpmf-cin: ${cin_standard_punctuation}" >&2
+            exit 1
+          fi
+
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

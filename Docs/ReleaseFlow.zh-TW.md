@@ -10,13 +10,14 @@
 
 ## 來源策略
 
-目前詞庫由四層組成：
+目前詞庫由六層組成：
 
 1. KeyKey Boneyard bootstrap：repo 內 vendored 一份 cooked DB，路徑是 `sources/keykey-boneyard-bootstrap/vendor/KeyKeySource.db`。這讓 CI 和 release build 不需要依賴本機的 `../KeyKey-Boneyard` checkout。
-2. libchewing-data：維持 upstream pinned source，不把完整 upstream repo 複製進來。用 `cargo run --release -- fetch-modern-sources` 下載固定版本與 SHA-256。
-3. bpmf-ext-cin：repo 內 vendored 一份 Public Domain extended BPMF 單字表，路徑是 `sources/bpmf-ext-cin/vendor/bpmf-ext.cin`，只用來補缺的 CJK BMP 單字讀音。
-4. Rime essay：維持 upstream pinned source，只抓固定 commit 的 `essay.txt` 與 license。
-5. Chiaki modern overlay：repo 直接維護的小型人工補詞，路徑是 `sources/chiaki-modern-overlay/phrases.tsv`。
+2. KeyKey BPMF punctuation table：repo 內 vendored 原始 KeyKey 標點 CIN，路徑是 `sources/keykey-punctuations-cin/vendor/bpmf-punctuations.cin`。release builder 只匯入 `%chardef` 裡 `_punctuation_` / `_ctrl_` 開頭的 rows，供 Smart Mandarin runtime 查標點候選。
+3. libchewing-data：維持 upstream pinned source，不把完整 upstream repo 複製進來。用 `cargo run --release -- fetch-modern-sources` 下載固定版本與 SHA-256。
+4. bpmf-ext-cin：repo 內 vendored 一份 Public Domain extended BPMF 單字表，路徑是 `sources/bpmf-ext-cin/vendor/bpmf-ext.cin`，只用來補缺的 CJK BMP 單字讀音。
+5. Rime essay：維持 upstream pinned source，只抓固定 commit 的 `essay.txt` 與 license。
+6. Chiaki modern overlay：repo 直接維護的小型人工補詞，路徑是 `sources/chiaki-modern-overlay/phrases.tsv`。
 
 `sources/keykey-boneyard-bootstrap/source-inventory.sha256` 是 bootstrap DB 的 provenance，記錄當初 cooked DB 來自哪些 KeyKey Boneyard 檔案與 SHA-256。release builder 實際讀取的是 vendored cooked DB。
 
@@ -113,3 +114,4 @@ dev -> main
 - `SHA256SUMS` 驗證通過。
 - `lexicon-manifest.json` 裡的 artifact URL 指向該 release tag。
 - 常見測試詞如 `測試輸入`、`輸入法`、`台灣`、`人工智慧`、`小紅書` 存在於 `unigrams.current`。
+- Smart Mandarin 標點查表 key 存在於 `unigrams` 與 `Mandarin-bpmf-cin`，至少包含 `_punctuation_< -> ，` 與 `_punctuation_Standard_< -> ，`。
