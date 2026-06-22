@@ -1,7 +1,7 @@
 use crate::config::{
-    Config, BONEYARD_SOURCE_ID, BONEYARD_SOURCE_NAME, DATABASE_SCHEMA_VERSION,
-    LIBCHEWING_SOURCE_ID, LIBCHEWING_SOURCE_NAME, OVERLAY_SOURCE_ID, OVERLAY_SOURCE_NAME,
-    RIME_ESSAY_SOURCE_ID, RIME_ESSAY_SOURCE_NAME,
+    Config, BONEYARD_SOURCE_ID, BONEYARD_SOURCE_NAME, BPMF_EXT_SOURCE_ID, BPMF_EXT_SOURCE_NAME,
+    DATABASE_SCHEMA_VERSION, LIBCHEWING_SOURCE_ID, LIBCHEWING_SOURCE_NAME, OVERLAY_SOURCE_ID,
+    OVERLAY_SOURCE_NAME, RIME_ESSAY_SOURCE_ID, RIME_ESSAY_SOURCE_NAME,
 };
 use crate::db;
 use crate::files::{file_info, sha256_file};
@@ -38,6 +38,14 @@ pub fn release_metadata(
             "libchewing Core Team",
             &paths.libchewing_inventory,
             db::stats_for_source_rows(source_rows, "sources/libchewing-data/raw/"),
+        )?,
+        release_source(
+            BPMF_EXT_SOURCE_ID,
+            BPMF_EXT_SOURCE_NAME,
+            "Public Domain",
+            "opendesktop.org.tw phone.cin contributors; KeyKey Boneyard maintainers",
+            &paths.bpmf_ext_inventory,
+            db::stats_for_source_rows(source_rows, "sources/bpmf-ext-cin/vendor/bpmf-ext.cin"),
         )?,
         release_source(
             RIME_ESSAY_SOURCE_ID,
@@ -110,6 +118,16 @@ pub fn manifest(
             "libchewing Core Team",
             &paths.libchewing_inventory,
             250,
+        )?,
+        manifest_source(
+            BPMF_EXT_SOURCE_ID,
+            BPMF_EXT_SOURCE_NAME,
+            "https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-ext.cin",
+            "cin",
+            "Public Domain",
+            "opendesktop.org.tw phone.cin contributors; KeyKey Boneyard maintainers",
+            &paths.bpmf_ext_inventory,
+            180,
         )?,
         manifest_source(
             RIME_ESSAY_SOURCE_ID,

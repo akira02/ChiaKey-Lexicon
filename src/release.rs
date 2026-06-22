@@ -1,3 +1,4 @@
+use crate::bpmf_ext;
 use crate::config::{self, Config};
 use crate::db;
 use crate::files::{
@@ -38,6 +39,13 @@ pub fn run() -> Result<()> {
         &mut conn,
         &cfg,
         &libchewing_files,
+        &mut source_keys,
+        &mut import_results,
+    )?;
+    import_bpmf_ext(
+        &mut conn,
+        &cfg,
+        &paths,
         &mut source_keys,
         &mut import_results,
     )?;
@@ -103,6 +111,7 @@ fn verify_inputs(
     let mut required = vec![
         cfg.boneyard_db.clone(),
         paths.boneyard_inventory.clone(),
+        paths.bpmf_ext_cin.clone(),
         paths.overlay_phrases.clone(),
         paths.rime_essay_raw.clone(),
     ];
@@ -116,6 +125,7 @@ fn create_output_dirs(cfg: &Config, paths: &ReleasePaths) -> Result<()> {
         fs::create_dir_all(parent)?;
     }
     fs::create_dir_all(&paths.boneyard_source_dir)?;
+    fs::create_dir_all(&paths.bpmf_ext_source_dir)?;
     fs::create_dir_all(&paths.libchewing_source_dir)?;
     fs::create_dir_all(&paths.rime_essay_source_dir)?;
     fs::create_dir_all(&paths.overlay_source_dir)?;
@@ -136,6 +146,12 @@ fn write_source_inventories(
         &paths.libchewing_inventory,
         &paths.libchewing_source_dir,
         &libchewing_paths,
+        true,
+    )?;
+    write_inventory(
+        &paths.bpmf_ext_inventory,
+        &paths.bpmf_ext_source_dir,
+        std::slice::from_ref(&paths.bpmf_ext_cin),
         true,
     )?;
     write_inventory(
@@ -186,6 +202,30 @@ fn import_libchewing(
         remember_records(source_keys, &result);
         import_results.push(result);
     }
+    Ok(())
+}
+
+fn import_bpmf_ext(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let existing_exact_keys = db::load_existing_exact_keys(conn)?;
+    let (records, seen, skipped) = bpmf_ext::parse_cin(&paths.bpmf_ext_cin, &existing_exact_keys)?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &repo_relative(&cfg.root, &paths.bpmf_ext_cin)?,
+        "bpmf-ext-character-supplement",
+        &sha256_file(&paths.bpmf_ext_cin)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
     Ok(())
 }
 

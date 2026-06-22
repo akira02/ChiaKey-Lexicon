@@ -8,6 +8,9 @@ pub const BONEYARD_SOURCE_ID: &str = "keykey-boneyard-bootstrap";
 pub const BONEYARD_SOURCE_NAME: &str = "KeyKey Boneyard bootstrap data";
 pub const BONEYARD_VENDOR_DB_PATH: &str =
     "sources/keykey-boneyard-bootstrap/vendor/KeyKeySource.db";
+pub const BPMF_EXT_SOURCE_ID: &str = "bpmf-ext-cin";
+pub const BPMF_EXT_SOURCE_NAME: &str = "Public domain extended BPMF character table";
+pub const BPMF_EXT_VENDOR_PATH: &str = "sources/bpmf-ext-cin/vendor/bpmf-ext.cin";
 pub const LIBCHEWING_SOURCE_ID: &str = "libchewing-data";
 pub const LIBCHEWING_SOURCE_NAME: &str = "libchewing-data Traditional Chinese Zhuyin dictionary";
 pub const RIME_ESSAY_SOURCE_ID: &str = "rime-essay";

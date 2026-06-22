@@ -6,8 +6,8 @@
       "id": "smart-mandarin-db",
       "kind": "keykey-source-db",
       "language_model_version": "chiaki-modern-2026.06.5",
-      "sha256": "3e30204d3ac3e8bed80db8908de61d3194f11757697753ce243df0a3fbdb1211",
-      "size": 44777472,
+      "sha256": "44fb2405ca89deb2004f78402ac77390fd35ba54ab4f196d5245fba5542e7cde",
+      "size": 46047232,
       "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.5/KeyKeySource-2026.06.5.db"
     },
     {
@@ -16,8 +16,8 @@
       "id": "smart-mandarin-metadata",
       "kind": "metadata",
       "language_model_version": "chiaki-modern-2026.06.5",
-      "sha256": "9b5bf54c3c146bc0db220f41545dac882cb117e8cab8d5690f9161f381bc71bb",
-      "size": 14477,
+      "sha256": "577ebaf8564279f5097dfc406adac866db6054cc4eda6ba13683a6b43d139cb2",
+      "size": 15233,
       "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.5/KeyKeySource-2026.06.5.json"
     },
     {
@@ -26,13 +26,13 @@
       "id": "smart-mandarin-checksums",
       "kind": "checksum",
       "language_model_version": "chiaki-modern-2026.06.5",
-      "sha256": "a65c240368adf446121023c99b248c24bbf3597009bd4e5b6acfec480282c1d4",
+      "sha256": "96a394aa4b0a6a149f5fbc3b801bd07d0d388c2e1476368aec284f8e530438cf",
       "size": 186,
       "url": "https://github.com/akira02/Chiaki-KeyKey-Lexicon/releases/download/2026.06.5/SHA256SUMS"
     }
   ],
   "database_schema_version": 1,
-  "generated_at": "2026-06-22T09:58:18Z",
+  "generated_at": "2026-06-22T10:04:58Z",
   "minimum_app_version": "0.1.0",
   "schema": 1,
   "sources": [
@@ -57,6 +57,17 @@
       "priority": 250,
       "sha256": "728cee6d45c0f63647ed4c1f03d8301f34ad0e95d31ce559f87bca7760d75c52",
       "url": "https://github.com/chewing/libchewing-data/releases/tag/v2026.3.22"
+    },
+    {
+      "attribution": "opendesktop.org.tw phone.cin contributors; KeyKey Boneyard maintainers",
+      "enabled": true,
+      "format": "cin",
+      "id": "bpmf-ext-cin",
+      "license": "Public Domain",
+      "name": "Public domain extended BPMF character table",
+      "priority": 180,
+      "sha256": "3796a40446eddec6f7afd53238f9ffc31179dce9d1d5735e9b1f15c5816ea467",
+      "url": "https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-ext.cin"
     },
     {
       "attribution": "Rime essay contributors",

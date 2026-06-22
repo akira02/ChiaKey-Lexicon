@@ -39,6 +39,13 @@ Unknown-license data must not be included in public release artifacts.
 - Review notes: [Docs/SourceReview.md](../Docs/SourceReview.md)
 - Release decision: included starting in `2026.06.3`
 
+### Public domain extended BPMF character table
+
+- Source id: `bpmf-ext-cin`
+- License file: [bpmf-ext-cin-Public-Domain.txt](bpmf-ext-cin-Public-Domain.txt)
+- Review notes: [Docs/SourceReview.md](../Docs/SourceReview.md)
+- Release decision: included starting in `2026.06.5`
+
 ### Rime essay
 
 - Source id: `rime-essay`

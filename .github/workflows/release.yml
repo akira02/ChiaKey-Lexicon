@@ -126,9 +126,17 @@ jobs:
             exit 1
           fi
 
+          for phrase in 我 婐 捰 倭 䂺 婑 䰀 㦱; do
+            found="$(sqlite3 "$db_name" "select count(*) from unigrams where qstring = '}Q' and current = '${phrase}';")"
+            if [[ "$found" -lt 1 ]]; then
+              echo "Missing ㄨㄛˇ native/Yahoo candidate: ${phrase}" >&2
+              exit 1
+            fi
+          done
+
           wo3_count="$(sqlite3 "$db_name" "select count(*) from unigrams where qstring = '}Q';")"
-          if [[ "$wo3_count" -lt 4 ]]; then
-            echo "Unexpectedly few ㄨㄛˇ candidates: ${wo3_count}" >&2
+          if [[ "$wo3_count" -ne 8 ]]; then
+            echo "Unexpected ㄨㄛˇ candidate count: ${wo3_count}" >&2
             exit 1
           fi
 

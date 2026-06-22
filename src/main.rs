@@ -1,3 +1,4 @@
+mod bpmf_ext;
 mod config;
 mod db;
 mod fetch;

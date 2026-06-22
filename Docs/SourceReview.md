@@ -95,6 +95,34 @@ The generated source inventory is stored at:
 sources/libchewing-data/source-inventory.sha256
 ```
 
+### bpmf-ext-cin
+
+- Name: Public domain extended BPMF character table
+- Local source: `sources/bpmf-ext-cin/vendor/bpmf-ext.cin`
+- Upstream source file: <https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-ext.cin>
+- License: Public Domain, per source file header
+- Attribution: opendesktop.org.tw phone.cin contributors; KeyKey Boneyard maintainers
+- Redistribution decision: included for public releases starting in `2026.06.5`
+
+This source is imported after libchewing-data and before Rime essay. The release builder uses it only as a low-priority single-character reading supplement:
+
+1. It imports CJK BMP characters only.
+2. It excludes non-BMP and private-use characters.
+3. It only adds missing exact `(reading, character)` pairs.
+4. It does not override libchewing character frequencies.
+
+This fills native/Yahoo character coverage gaps such as the `ㄨㄛˇ` candidate set:
+
+```text
+我 婐 捰 倭 䂺 婑 䰀 㦱
+```
+
+The generated source inventory is stored at:
+
+```text
+sources/bpmf-ext-cin/source-inventory.sha256
+```
+
 ### rime-essay
 
 - Name: Rime essay shared vocabulary and language model

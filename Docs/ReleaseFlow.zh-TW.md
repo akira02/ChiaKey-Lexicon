@@ -14,8 +14,9 @@
 
 1. KeyKey Boneyard bootstrap：repo 內 vendored 一份 cooked DB，路徑是 `sources/keykey-boneyard-bootstrap/vendor/KeyKeySource.db`。這讓 CI 和 release build 不需要依賴本機的 `../KeyKey-Boneyard` checkout。
 2. libchewing-data：維持 upstream pinned source，不把完整 upstream repo 複製進來。用 `cargo run --release -- fetch-modern-sources` 下載固定版本與 SHA-256。
-3. Rime essay：維持 upstream pinned source，只抓固定 commit 的 `essay.txt` 與 license。
-4. Chiaki modern overlay：repo 直接維護的小型人工補詞，路徑是 `sources/chiaki-modern-overlay/phrases.tsv`。
+3. bpmf-ext-cin：repo 內 vendored 一份 Public Domain extended BPMF 單字表，路徑是 `sources/bpmf-ext-cin/vendor/bpmf-ext.cin`，只用來補缺的 CJK BMP 單字讀音。
+4. Rime essay：維持 upstream pinned source，只抓固定 commit 的 `essay.txt` 與 license。
+5. Chiaki modern overlay：repo 直接維護的小型人工補詞，路徑是 `sources/chiaki-modern-overlay/phrases.tsv`。
 
 `sources/keykey-boneyard-bootstrap/source-inventory.sha256` 是 bootstrap DB 的 provenance，記錄當初 cooked DB 來自哪些 KeyKey Boneyard 檔案與 SHA-256。release builder 實際讀取的是 vendored cooked DB。
 
