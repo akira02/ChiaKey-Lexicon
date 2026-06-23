@@ -344,10 +344,12 @@ fn libchewing_weight(score: i64, max_score: i64) -> f64 {
 
 fn libchewing_character_weight(score: i64, max_score: i64) -> f64 {
     if score <= 0 {
-        return -3.2;
+        return -3.25;
     }
     let ratio = ((score + 1) as f64).ln() / ((max_score + 1) as f64).ln();
-    round6(-0.35 - (2.85 * (1.0 - ratio)))
+    // Keep character-frequency rows useful for same-reading character order,
+    // while giving explicit phrase rows a small edge over character splits.
+    round6(-0.40 - (2.85 * (1.0 - ratio)))
 }
 
 fn rime_weight(score: i64, max_score: i64) -> f64 {
@@ -361,7 +363,10 @@ fn round6(value: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_explicit_overlay, parse_variant_demotions};
+    use super::{
+        libchewing_character_weight, libchewing_weight, parse_explicit_overlay,
+        parse_variant_demotions,
+    };
     use crate::config::Config;
     use std::fs;
     use std::path::PathBuf;
@@ -407,6 +412,19 @@ mod tests {
         );
 
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn calibrates_character_frequency_below_common_phrase_split() {
+        let max_score = 327_781;
+        let place_name = libchewing_weight(507, max_score);
+        let ordinal = libchewing_character_weight(59_239, max_score);
+        let name = libchewing_character_weight(73_301, max_score);
+
+        assert!(
+            place_name > ordinal + name,
+            "place-name phrase should outrank the ordinal+name character split"
+        );
     }
 
     fn temp_file(name: &str, content: &str) -> PathBuf {

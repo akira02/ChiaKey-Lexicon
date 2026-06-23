@@ -198,6 +198,7 @@ The release builder imports these pinned files:
 `tsi.csv` and `alt.csv` are imported as the main modern phrase layer because they include explicit Zhuyin readings. For phrases present in libchewing-data, the builder replaces older inferred phrase readings from the bootstrap database with libchewing's explicit readings. `word.csv` is used only to add missing single-character readings.
 
 Starting in `2026.06.5`, single-character rows from `tsi.csv` are also imported as a character-frequency correction layer. This lets common characters such as `我` keep their libchewing frequency instead of tying with rare same-reading characters from the bootstrap database.
+The character-frequency mapping keeps a small single-character segmentation penalty so common characters do not accidentally outrank explicit phrase rows with the same reading.
 
 The raw files are fetched by:
 

@@ -6,7 +6,7 @@
       "id": "smart-mandarin-db",
       "kind": "keykey-source-db",
       "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "46881e7bae5ba7d039dfaf4e7519e31c8da51dee384fdea28a2b1c9eeeef6724",
+      "sha256": "a53225e784852f140de5658adf9a5552ac70fa057160eb5addf008d1b3261792",
       "size": 51281920,
       "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/KeyKeySource-2026.06.7.db"
     },
@@ -16,7 +16,7 @@
       "id": "smart-mandarin-metadata",
       "kind": "metadata",
       "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "3256446c71e81445e86f64f9833b71b24f08b18c89379e40b9ef2095ce8d1a21",
+      "sha256": "0f60d68bf86f1df504e586f37c4da7c546ea788b72d524deac76f0eff2366ac4",
       "size": 20661,
       "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/KeyKeySource-2026.06.7.json"
     },
@@ -26,13 +26,13 @@
       "id": "smart-mandarin-checksums",
       "kind": "checksum",
       "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "5ca482ff159849071a8a8546fee265c11550d31eff8344c288d09f4598d1f20a",
+      "sha256": "87d022812c0b1f6582965b72e18226d184db7e487afc943c84f1ba28cebb8d78",
       "size": 186,
       "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/SHA256SUMS"
     }
   ],
   "database_schema_version": 1,
-  "generated_at": "2026-06-23T04:27:46Z",
+  "generated_at": "2026-06-23T08:03:41Z",
   "minimum_app_version": "0.1.0",
   "schema": 1,
   "sources": [
