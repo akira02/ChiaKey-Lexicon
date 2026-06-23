@@ -6,8 +6,8 @@
       "id": "smart-mandarin-db",
       "kind": "keykey-source-db",
       "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "dafdb9c0744e3a6a8740b5343a41599f4f4c375c41cb28b6f73aa2858b31a133",
-      "size": 51183616,
+      "sha256": "46881e7bae5ba7d039dfaf4e7519e31c8da51dee384fdea28a2b1c9eeeef6724",
+      "size": 51281920,
       "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/KeyKeySource-2026.06.7.db"
     },
     {
@@ -16,8 +16,8 @@
       "id": "smart-mandarin-metadata",
       "kind": "metadata",
       "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "26a83194db719a2dd77e02e47d3dc7f642ddab471c7a2e50032256c77e745f54",
-      "size": 19950,
+      "sha256": "3256446c71e81445e86f64f9833b71b24f08b18c89379e40b9ef2095ce8d1a21",
+      "size": 20661,
       "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/KeyKeySource-2026.06.7.json"
     },
     {
@@ -26,7 +26,7 @@
       "id": "smart-mandarin-checksums",
       "kind": "checksum",
       "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "0b4a9c035dfa2a3a4a5a4780c7f6419e3e2fad225f9813da182a9bb53aa88377",
+      "sha256": "5ca482ff159849071a8a8546fee265c11550d31eff8344c288d09f4598d1f20a",
       "size": 186,
       "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/SHA256SUMS"
     }
@@ -57,6 +57,17 @@
       "priority": 120,
       "sha256": "c1861f127d7d1c3f3dee84faf2039df1f8e66e588a6d6f5f5b16eab74391c38a",
       "url": "https://github.com/vChewing/KeyKey-Boneyard/blob/master/YahooKeyKey-Source-1.1.2528/DataTables/bpmf-punctuations.cin"
+    },
+    {
+      "attribution": "ChiaKey Lexicon maintainers",
+      "enabled": true,
+      "format": "tsv",
+      "id": "chiakey-symbols-overlay",
+      "license": "CC0-1.0",
+      "name": "ChiaKey supplemental symbol list",
+      "priority": 125,
+      "sha256": "dd43a009267efe3d51d9edc98937f5e720f512a98ff2dc4eb9fa964de04d3d3e",
+      "url": "https://github.com/akira02/ChiaKey-Lexicon/tree/main/sources/chiakey-symbols-overlay"
     },
     {
       "attribution": "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / ChiaKey maintainers",

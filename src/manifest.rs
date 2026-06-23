@@ -4,7 +4,8 @@ use crate::config::{
     MODULE_CIN_SOURCE_NAME, OPENCC_VARIANT_SOURCE_ID, OPENCC_VARIANT_SOURCE_NAME,
     OVERLAY_SOURCE_ID, OVERLAY_SOURCE_NAME, PREPOPULATED_SERVICE_SOURCE_ID,
     PREPOPULATED_SERVICE_SOURCE_NAME, PUNCTUATION_SOURCE_ID, PUNCTUATION_SOURCE_NAME,
-    RIME_ESSAY_SOURCE_ID, RIME_ESSAY_SOURCE_NAME,
+    RIME_ESSAY_SOURCE_ID, RIME_ESSAY_SOURCE_NAME, SYMBOL_OVERLAY_SOURCE_ID,
+    SYMBOL_OVERLAY_SOURCE_NAME,
 };
 use crate::db;
 use crate::files::{file_info, sha256_file};
@@ -43,6 +44,14 @@ pub fn release_metadata(
                 source_rows,
                 "sources/keykey-punctuations-cin/vendor/bpmf-punctuations.cin",
             ),
+        )?,
+        release_source(
+            SYMBOL_OVERLAY_SOURCE_ID,
+            SYMBOL_OVERLAY_SOURCE_NAME,
+            "CC0-1.0",
+            "ChiaKey Lexicon maintainers",
+            &paths.symbol_overlay_inventory,
+            db::stats_for_source_rows(source_rows, "sources/chiakey-symbols-overlay/"),
         )?,
         release_source(
             PREPOPULATED_SERVICE_SOURCE_ID,
@@ -156,6 +165,16 @@ pub fn manifest(
             "Yahoo! Inc.; OpenVanilla contributors; KeyKey Boneyard / ChiaKey maintainers",
             &paths.punctuation_inventory,
             120,
+        )?,
+        manifest_source(
+            SYMBOL_OVERLAY_SOURCE_ID,
+            SYMBOL_OVERLAY_SOURCE_NAME,
+            "https://github.com/akira02/ChiaKey-Lexicon/tree/main/sources/chiakey-symbols-overlay",
+            "tsv",
+            "CC0-1.0",
+            "ChiaKey Lexicon maintainers",
+            &paths.symbol_overlay_inventory,
+            125,
         )?,
         manifest_source(
             PREPOPULATED_SERVICE_SOURCE_ID,

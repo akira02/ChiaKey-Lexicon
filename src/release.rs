@@ -87,6 +87,13 @@ pub fn run() -> Result<()> {
         &mut source_keys,
         &mut import_results,
     )?;
+    import_symbol_overlay(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
     import_prepopulated_service_data(&mut conn, &cfg, &paths, &mut import_results)?;
     import_module_cin_tables(&mut conn, &cfg, &paths, &mut import_results)?;
 
@@ -140,6 +147,7 @@ fn verify_inputs(
         cfg.boneyard_db.clone(),
         paths.boneyard_inventory.clone(),
         paths.punctuation_cin.clone(),
+        paths.symbol_overlay_symbols.clone(),
         paths.canned_messages_plist.clone(),
         paths.bpmf_ext_cin.clone(),
         paths.overlay_phrases.clone(),
@@ -159,6 +167,7 @@ fn create_output_dirs(cfg: &Config, paths: &ReleasePaths) -> Result<()> {
     }
     fs::create_dir_all(&paths.boneyard_source_dir)?;
     fs::create_dir_all(&paths.punctuation_source_dir)?;
+    fs::create_dir_all(&paths.symbol_overlay_source_dir)?;
     fs::create_dir_all(&paths.prepopulated_service_source_dir)?;
     fs::create_dir_all(&paths.module_cin_source_dir)?;
     fs::create_dir_all(&paths.bpmf_ext_source_dir)?;
@@ -189,6 +198,12 @@ fn write_source_inventories(
         &paths.punctuation_inventory,
         &paths.punctuation_source_dir,
         std::slice::from_ref(&paths.punctuation_cin),
+        true,
+    )?;
+    write_inventory(
+        &paths.symbol_overlay_inventory,
+        &paths.symbol_overlay_source_dir,
+        std::slice::from_ref(&paths.symbol_overlay_symbols),
         true,
     )?;
     write_inventory(
@@ -324,6 +339,31 @@ fn import_prepopulated_service_data(
         skipped: 0,
         records: Vec::new(),
     });
+    Ok(())
+}
+
+fn import_symbol_overlay(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let existing_exact_keys = db::load_existing_exact_keys(conn)?;
+    let (records, seen, skipped) =
+        punctuations::parse_symbol_overlay(&paths.symbol_overlay_symbols, &existing_exact_keys)?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &repo_relative(&cfg.root, &paths.symbol_overlay_symbols)?,
+        "chiakey-symbol-list-overlay",
+        &sha256_file(&paths.symbol_overlay_symbols)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
     Ok(())
 }
 

@@ -4,13 +4,14 @@ use crate::config::{
     CJ_PUNCTUATIONS_HALFWIDTH_VENDOR_PATH, CJ_PUNCTUATIONS_MIXEDWIDTH_VENDOR_PATH,
     LIBCHEWING_SOURCE_ID, MODULE_CIN_SOURCE_ID, OPENCC_VARIANT_SOURCE_ID, OVERLAY_SOURCE_ID,
     PREPOPULATED_SERVICE_SOURCE_ID, PUNCTUATION_SOURCE_ID, PUNCTUATION_VENDOR_PATH,
-    RIME_ESSAY_SOURCE_ID, SIMPLEX_EXT_VENDOR_PATH,
+    RIME_ESSAY_SOURCE_ID, SIMPLEX_EXT_VENDOR_PATH, SYMBOL_OVERLAY_PATH, SYMBOL_OVERLAY_SOURCE_ID,
 };
 use std::path::PathBuf;
 
 pub struct ReleasePaths {
     pub boneyard_source_dir: PathBuf,
     pub punctuation_source_dir: PathBuf,
+    pub symbol_overlay_source_dir: PathBuf,
     pub prepopulated_service_source_dir: PathBuf,
     pub module_cin_source_dir: PathBuf,
     pub bpmf_ext_source_dir: PathBuf,
@@ -23,6 +24,8 @@ pub struct ReleasePaths {
     pub boneyard_inventory: PathBuf,
     pub punctuation_inventory: PathBuf,
     pub punctuation_cin: PathBuf,
+    pub symbol_overlay_inventory: PathBuf,
+    pub symbol_overlay_symbols: PathBuf,
     pub prepopulated_service_inventory: PathBuf,
     pub canned_messages_plist: PathBuf,
     pub module_cin_inventory: PathBuf,
@@ -51,6 +54,7 @@ impl ReleasePaths {
     pub fn new(cfg: &Config) -> Self {
         let boneyard_source_dir = cfg.root.join("sources").join(BONEYARD_SOURCE_ID);
         let punctuation_source_dir = cfg.root.join("sources").join(PUNCTUATION_SOURCE_ID);
+        let symbol_overlay_source_dir = cfg.root.join("sources").join(SYMBOL_OVERLAY_SOURCE_ID);
         let prepopulated_service_source_dir = cfg
             .root
             .join("sources")
@@ -70,6 +74,8 @@ impl ReleasePaths {
             boneyard_inventory: boneyard_source_dir.join("source-inventory.sha256"),
             punctuation_inventory: punctuation_source_dir.join("source-inventory.sha256"),
             punctuation_cin: cfg.root.join(PUNCTUATION_VENDOR_PATH),
+            symbol_overlay_inventory: symbol_overlay_source_dir.join("source-inventory.sha256"),
+            symbol_overlay_symbols: cfg.root.join(SYMBOL_OVERLAY_PATH),
             prepopulated_service_inventory: prepopulated_service_source_dir
                 .join("source-inventory.sha256"),
             canned_messages_plist: cfg.root.join(CANNED_MESSAGES_VENDOR_PATH),
@@ -93,6 +99,7 @@ impl ReleasePaths {
             dist_manifest: cfg.dist_dir.join("lexicon-manifest.json"),
             boneyard_source_dir,
             punctuation_source_dir,
+            symbol_overlay_source_dir,
             prepopulated_service_source_dir,
             module_cin_source_dir,
             bpmf_ext_source_dir,

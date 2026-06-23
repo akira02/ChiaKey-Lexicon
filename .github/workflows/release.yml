@@ -171,16 +171,25 @@ jobs:
           fi
 
           punctuation_list_count="$(sqlite3 "$db_name" "select count(*) from unigrams where qstring = '_punctuation_list';")"
-          if [[ "$punctuation_list_count" -lt 50 ]]; then
+          if [[ "$punctuation_list_count" -lt 400 ]]; then
             echo "Missing _punctuation_list rows in unigrams: ${punctuation_list_count}" >&2
             exit 1
           fi
 
           cin_punctuation_list_count="$(sqlite3 "$db_name" "select count(*) from 'Mandarin-bpmf-cin' where key = '_punctuation_list';")"
-          if [[ "$cin_punctuation_list_count" -lt 50 ]]; then
+          if [[ "$cin_punctuation_list_count" -lt 400 ]]; then
             echo "Missing _punctuation_list rows in Mandarin-bpmf-cin: ${cin_punctuation_list_count}" >&2
             exit 1
           fi
+
+          for symbol in '€' '₿' '①' '↔' '∑' '✓' '♪' '〒'; do
+            unigram_symbol_count="$(sqlite3 "$db_name" "select count(*) from unigrams where qstring = '_punctuation_list' and current = '${symbol}';")"
+            cin_symbol_count="$(sqlite3 "$db_name" "select count(*) from 'Mandarin-bpmf-cin' where key = '_punctuation_list' and value = '${symbol}';")"
+            if [[ "$unigram_symbol_count" -lt 1 || "$cin_symbol_count" -lt 1 ]]; then
+              echo "Missing supplemental punctuation symbol: ${symbol}" >&2
+              exit 1
+            fi
+          done
 
           bpmf_cname_count="$(sqlite3 "$db_name" "select count(*) from 'Mandarin-bpmf-cin' where key = '__property_cname' and value = '注音';")"
           if [[ "$bpmf_cname_count" -lt 1 ]]; then

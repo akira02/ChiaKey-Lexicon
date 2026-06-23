@@ -12,6 +12,9 @@ pub const PUNCTUATION_SOURCE_ID: &str = "keykey-punctuations-cin";
 pub const PUNCTUATION_SOURCE_NAME: &str = "KeyKey BPMF punctuation table";
 pub const PUNCTUATION_VENDOR_PATH: &str =
     "sources/keykey-punctuations-cin/vendor/bpmf-punctuations.cin";
+pub const SYMBOL_OVERLAY_SOURCE_ID: &str = "chiakey-symbols-overlay";
+pub const SYMBOL_OVERLAY_SOURCE_NAME: &str = "ChiaKey supplemental symbol list";
+pub const SYMBOL_OVERLAY_PATH: &str = "sources/chiakey-symbols-overlay/symbols.tsv";
 pub const PREPOPULATED_SERVICE_SOURCE_ID: &str = "keykey-prepopulated-service-data";
 pub const PREPOPULATED_SERVICE_SOURCE_NAME: &str = "KeyKey prepopulated service data";
 pub const CANNED_MESSAGES_VENDOR_PATH: &str =

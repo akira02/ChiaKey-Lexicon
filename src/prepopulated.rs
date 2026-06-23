@@ -5,6 +5,9 @@ use rusqlite::Connection;
 use std::fs;
 use std::path::Path;
 
+const MIN_PUNCTUATION_LIST_ROWS: i64 = 400;
+const REQUIRED_SUPPLEMENTAL_SYMBOLS: &[&str] = &["€", "₿", "①", "↔", "∑", "✓", "♪", "〒"];
+
 pub struct ServiceData {
     pub canned_messages: String,
     pub timestamp: i64,
@@ -37,8 +40,10 @@ pub fn validate_runtime_required_data(conn: &Connection) -> Result<()> {
         [],
         |row| row.get(0),
     )?;
-    if punctuation_list_unigrams < 50 {
-        bail!("missing runtime punctuation list rows in unigrams");
+    if punctuation_list_unigrams < MIN_PUNCTUATION_LIST_ROWS {
+        bail!(
+            "missing supplemental runtime punctuation list rows in unigrams: {punctuation_list_unigrams}"
+        );
     }
 
     let punctuation_list_cin: i64 = conn.query_row(
@@ -46,8 +51,14 @@ pub fn validate_runtime_required_data(conn: &Connection) -> Result<()> {
         [],
         |row| row.get(0),
     )?;
-    if punctuation_list_cin < 50 {
-        bail!("missing runtime punctuation list rows in Mandarin-bpmf-cin");
+    if punctuation_list_cin < MIN_PUNCTUATION_LIST_ROWS {
+        bail!(
+            "missing supplemental runtime punctuation list rows in Mandarin-bpmf-cin: {punctuation_list_cin}"
+        );
+    }
+
+    for symbol in REQUIRED_SUPPLEMENTAL_SYMBOLS {
+        require_punctuation_symbol(conn, symbol)?;
     }
 
     let punctuation_less_than: String = conn.query_row(
@@ -126,6 +137,25 @@ fn require_service_row(conn: &Connection, key: &str, sql: &str) -> Result<()> {
     let count: i64 = conn.query_row(sql, [], |row| row.get(0))?;
     if count == 0 {
         bail!("missing prepopulated_service_data/{key}");
+    }
+    Ok(())
+}
+
+fn require_punctuation_symbol(conn: &Connection, symbol: &str) -> Result<()> {
+    let unigram_count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM unigrams
+         WHERE qstring = '_punctuation_list' AND current = ?1",
+        [symbol],
+        |row| row.get(0),
+    )?;
+    let cin_count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM 'Mandarin-bpmf-cin'
+         WHERE key = '_punctuation_list' AND value = ?1",
+        [symbol],
+        |row| row.get(0),
+    )?;
+    if unigram_count == 0 || cin_count == 0 {
+        bail!("missing supplemental punctuation symbol {symbol}");
     }
     Ok(())
 }

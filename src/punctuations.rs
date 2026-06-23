@@ -1,4 +1,4 @@
-use crate::config::PUNCTUATION_SOURCE_ID;
+use crate::config::{PUNCTUATION_SOURCE_ID, SYMBOL_OVERLAY_SOURCE_ID};
 use crate::types::SourceRecord;
 use anyhow::{Context, Result};
 use std::collections::{HashMap, HashSet};
@@ -7,7 +7,9 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 const BASE_WEIGHT: f64 = 0.0;
+const SYMBOL_OVERLAY_BASE_WEIGHT: f64 = -0.001;
 const RANK_STEP: f64 = 0.000001;
+const PUNCTUATION_LIST_KEY: &str = "_punctuation_list";
 
 pub fn parse_cin(path: &Path) -> Result<(Vec<SourceRecord>, usize, usize)> {
     let file = File::open(path).with_context(|| format!("read {}", path.display()))?;
@@ -56,6 +58,56 @@ pub fn parse_cin(path: &Path) -> Result<(Vec<SourceRecord>, usize, usize)> {
     Ok((records, seen, skipped))
 }
 
+pub fn parse_symbol_overlay(
+    path: &Path,
+    existing_exact_keys: &HashSet<(String, String)>,
+) -> Result<(Vec<SourceRecord>, usize, usize)> {
+    let file = File::open(path).with_context(|| format!("read {}", path.display()))?;
+    let reader = BufReader::new(file);
+    let mut seen_pairs: HashSet<(String, String)> = HashSet::new();
+    let mut records = Vec::new();
+    let mut seen = 0;
+    let mut skipped = 0;
+
+    for line in reader.lines() {
+        let line = line?;
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+
+        seen += 1;
+        let parts = line.splitn(2, '\t').collect::<Vec<_>>();
+        let symbol = parts[0].trim();
+        if symbol.is_empty() || symbol.contains('\n') {
+            skipped += 1;
+            continue;
+        }
+
+        let key = (PUNCTUATION_LIST_KEY.to_string(), symbol.to_string());
+        if existing_exact_keys.contains(&key) || !seen_pairs.insert(key) {
+            skipped += 1;
+            continue;
+        }
+
+        let rank = records.len();
+        let tag_suffix = parts
+            .get(1)
+            .map(|tags| tags.trim())
+            .filter(|tags| !tags.is_empty())
+            .unwrap_or("supplemental-symbol");
+        records.push(SourceRecord {
+            qstring: PUNCTUATION_LIST_KEY.to_string(),
+            phrase: symbol.to_string(),
+            weight: SYMBOL_OVERLAY_BASE_WEIGHT - (rank as f64 * RANK_STEP),
+            source_id: SYMBOL_OVERLAY_SOURCE_ID,
+            tags: format!("unigram,{SYMBOL_OVERLAY_SOURCE_ID},{tag_suffix}"),
+        });
+    }
+
+    Ok((records, seen, skipped))
+}
+
 fn parse_chardef_line(line: &str, ranks: &mut HashMap<String, usize>) -> Option<SourceRecord> {
     let split_at = line.find(char::is_whitespace)?;
     let key = line[..split_at].trim();
@@ -82,8 +134,10 @@ fn parse_chardef_line(line: &str, ranks: &mut HashMap<String, usize>) -> Option<
 
 #[cfg(test)]
 mod tests {
-    use super::parse_chardef_line;
-    use std::collections::HashMap;
+    use super::{parse_chardef_line, parse_symbol_overlay};
+    use std::collections::{HashMap, HashSet};
+    use std::fs;
+    use std::path::PathBuf;
 
     #[test]
     fn keeps_runtime_punctuation_and_ctrl_keys() {
@@ -109,5 +163,33 @@ mod tests {
         let second = parse_chardef_line("_punctuation_{ 《", &mut ranks).unwrap();
 
         assert!(first.weight > second.weight);
+    }
+
+    #[test]
+    fn appends_symbol_overlay_without_replacing_existing_punctuation() {
+        let path = temp_file(
+            "symbols",
+            "# symbol<TAB>tags\n€\tcurrency\n，\tduplicate\n€\tduplicate\n",
+        );
+        let existing_exact_keys =
+            HashSet::from([("_punctuation_list".to_string(), "，".to_string())]);
+
+        let (records, seen, skipped) = parse_symbol_overlay(&path, &existing_exact_keys).unwrap();
+
+        assert_eq!(seen, 3);
+        assert_eq!(skipped, 2);
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].qstring, "_punctuation_list");
+        assert_eq!(records[0].phrase, "€");
+        assert_eq!(records[0].tags, "unigram,chiakey-symbols-overlay,currency");
+
+        let _ = fs::remove_file(path);
+    }
+
+    fn temp_file(name: &str, content: &str) -> PathBuf {
+        let path =
+            std::env::temp_dir().join(format!("chiakey-lexicon-{name}-{}.tsv", std::process::id()));
+        fs::write(&path, content).unwrap();
+        path
     }
 }

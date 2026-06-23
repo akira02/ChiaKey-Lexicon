@@ -108,6 +108,33 @@ The generated source inventory is stored at:
 sources/keykey-module-cin/source-inventory.sha256
 ```
 
+## Included Starting in 2026.06.9
+
+### chiakey-symbols-overlay
+
+- Name: ChiaKey supplemental symbol list
+- Local source: `sources/chiakey-symbols-overlay/symbols.tsv`
+- License: CC0-1.0
+- Attribution: ChiaKey Lexicon maintainers
+- Redistribution decision: included for public releases starting in `2026.06.9`
+
+This source supplements the original KeyKey punctuation list with project-owned
+symbols that are useful in modern text input: extended punctuation, currency
+signs, legal and trademark marks, CJK symbols, enclosed numbers, roman numeral
+variants, additional arrows, mathematical operators and relations, check marks,
+stars, card suits, music symbols, and units.
+
+The release builder imports this source only as `_punctuation_list` rows. It is
+loaded after `keykey-punctuations-cin`, and skips any symbol already present in
+the Yahoo KeyKey punctuation list so the original ordering and direct
+punctuation key mappings are preserved.
+
+The generated source inventory is stored at:
+
+```text
+sources/chiakey-symbols-overlay/source-inventory.sha256
+```
+
 ## Excluded from v1
 
 These sources are useful references, but they are not included as raw sources in the first release artifacts:

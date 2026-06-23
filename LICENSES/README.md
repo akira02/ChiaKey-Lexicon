@@ -53,6 +53,13 @@ Unknown-license data must not be included in public release artifacts.
 - Review notes: [Docs/SourceReview.md](../Docs/SourceReview.md)
 - Release decision: included starting in `2026.06.2`
 
+### ChiaKey supplemental symbol list
+
+- Source id: `chiakey-symbols-overlay`
+- License file: [CC0-1.0.txt](CC0-1.0.txt)
+- Review notes: [Docs/SourceReview.md](../Docs/SourceReview.md)
+- Release decision: included starting in `2026.06.9`
+
 ### OpenCC-derived Traditional Chinese variant policy
 
 - Source id: `opencc-variant-policy`
