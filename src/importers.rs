@@ -8,6 +8,11 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
+const LIBCHEWING_PHRASE_SEGMENT_BONUS: f64 = 0.5;
+const LIBCHEWING_PHRASE_SEGMENT_BONUS_THRESHOLD: f64 = -0.75;
+const RIME_OVERLAP_RERANK_MARGIN: f64 = 0.01;
+const RIME_OVERLAP_RERANK_MAX_WEIGHT: f64 = -0.5;
+
 pub fn libchewing_max_score(paths: &[PathBuf]) -> Result<i64> {
     let mut max_score = 1;
     for path in paths {
@@ -118,6 +123,97 @@ pub fn parse_rime_essay(
             tags: format!("unigram,{RIME_ESSAY_SOURCE_ID},supplemental"),
         })
         .collect::<Vec<_>>();
+
+    Ok((dedupe_records(records), seen, skipped))
+}
+
+pub fn parse_rime_overlap_reranks(
+    path: &Path,
+    cfg: &Config,
+    existing_records: &[(String, String, f64)],
+) -> Result<(Vec<SourceRecord>, usize, usize)> {
+    let file = File::open(path).with_context(|| format!("read {}", path.display()))?;
+    let reader = BufReader::new(file);
+    let mut rime_scores: HashMap<String, i64> = HashMap::new();
+    let mut seen = 0;
+    let mut skipped = 0;
+
+    for line in reader.lines() {
+        let line = line?;
+        if line.trim().is_empty() || line.starts_with('#') {
+            continue;
+        }
+        seen += 1;
+        let Some((phrase, score_text)) = line.split_once('\t') else {
+            skipped += 1;
+            continue;
+        };
+        let Some(score) = parse_i64(score_text) else {
+            skipped += 1;
+            continue;
+        };
+        if score < cfg.rime_essay_min_score
+            || !phrase_candidate(phrase, 2, cfg.max_phrase_codepoints)
+        {
+            skipped += 1;
+            continue;
+        }
+        rime_scores
+            .entry(phrase.to_string())
+            .and_modify(|existing| *existing = (*existing).max(score))
+            .or_insert(score);
+    }
+
+    let mut qstring_groups: HashMap<String, Vec<(String, f64, i64)>> = HashMap::new();
+    for (qstring, phrase, current_weight) in existing_records {
+        let phrase_len = phrase.chars().count();
+        if phrase_len < 2
+            || phrase_len > cfg.max_phrase_codepoints
+            || qstring.chars().count() != phrase_len * 2
+        {
+            continue;
+        }
+        if let Some(score) = rime_scores.get(phrase) {
+            qstring_groups.entry(qstring.clone()).or_default().push((
+                phrase.clone(),
+                *current_weight,
+                *score,
+            ));
+        }
+    }
+
+    let mut records = Vec::new();
+    for (qstring, mut group) in qstring_groups {
+        if group.len() < 2 {
+            continue;
+        }
+        group.sort_by(|left, right| left.2.cmp(&right.2).then_with(|| left.0.cmp(&right.0)));
+
+        let mut floor = f64::NEG_INFINITY;
+        for (phrase, current_weight, _score) in group {
+            let minimum_weight = if floor.is_finite() {
+                floor + RIME_OVERLAP_RERANK_MARGIN
+            } else {
+                current_weight
+            };
+            let proposed_weight = current_weight.max(minimum_weight);
+            let applied_weight = if proposed_weight > current_weight
+                && proposed_weight <= RIME_OVERLAP_RERANK_MAX_WEIGHT
+            {
+                records.push(SourceRecord {
+                    qstring: qstring.clone(),
+                    phrase,
+                    weight: round6(proposed_weight),
+                    source_id: RIME_ESSAY_SOURCE_ID,
+                    tags: format!("unigram,{RIME_ESSAY_SOURCE_ID},overlap-rerank"),
+                });
+                proposed_weight
+            } else {
+                current_weight
+            };
+            floor = floor.max(applied_weight);
+        }
+    }
 
     Ok((dedupe_records(records), seen, skipped))
 }
@@ -317,7 +413,7 @@ fn parse_libchewing_row(
     }
 
     let weight = match entry.weight_mode {
-        LibchewingWeightMode::Frequency => libchewing_weight(score, max_score),
+        LibchewingWeightMode::Frequency => libchewing_weight(score, max_score, syllable_count),
         LibchewingWeightMode::CharacterFrequency => libchewing_character_weight(score, max_score),
         LibchewingWeightMode::CharacterFallback => -3.2,
     };
@@ -334,12 +430,19 @@ fn parse_libchewing_row(
     })
 }
 
-fn libchewing_weight(score: i64, max_score: i64) -> f64 {
-    if score <= 0 {
-        return -2.8;
-    }
-    let ratio = ((score + 1) as f64).ln() / ((max_score + 1) as f64).ln();
-    round6(-0.25 - (2.35 * (1.0 - ratio)))
+fn libchewing_weight(score: i64, max_score: i64, syllable_count: usize) -> f64 {
+    let base = if score <= 0 {
+        -2.8
+    } else {
+        let ratio = ((score + 1) as f64).ln() / ((max_score + 1) as f64).ln();
+        -0.25 - (2.35 * (1.0 - ratio))
+    };
+    let segment_bonus = if syllable_count > 1 && base < LIBCHEWING_PHRASE_SEGMENT_BONUS_THRESHOLD {
+        LIBCHEWING_PHRASE_SEGMENT_BONUS
+    } else {
+        0.0
+    };
+    round6(base + segment_bonus)
 }
 
 fn libchewing_character_weight(score: i64, max_score: i64) -> f64 {
@@ -365,7 +468,8 @@ fn round6(value: f64) -> f64 {
 mod tests {
     use super::{
         libchewing_character_weight, libchewing_weight, parse_explicit_overlay,
-        parse_variant_demotions,
+        parse_rime_overlap_reranks, parse_variant_demotions, LIBCHEWING_PHRASE_SEGMENT_BONUS,
+        LIBCHEWING_PHRASE_SEGMENT_BONUS_THRESHOLD, RIME_OVERLAP_RERANK_MARGIN,
     };
     use crate::config::Config;
     use std::fs;
@@ -415,16 +519,71 @@ mod tests {
     }
 
     #[test]
-    fn calibrates_character_frequency_below_common_phrase_split() {
+    fn calibrates_known_phrases_above_character_splits() {
         let max_score = 327_781;
-        let place_name = libchewing_weight(507, max_score);
+        let place_name = libchewing_weight(507, max_score, 2);
         let ordinal = libchewing_character_weight(59_239, max_score);
         let name = libchewing_character_weight(73_301, max_score);
+        let foundation = libchewing_weight(74, max_score, 2);
+        let machine = libchewing_character_weight(30_641, max_score);
+        let weight = libchewing_weight(1, max_score, 2);
+        let whole = libchewing_character_weight(35_212, max_score);
+        let middle = libchewing_character_weight(14_865, max_score);
 
         assert!(
             place_name > ordinal + name,
             "place-name phrase should outrank the ordinal+name character split"
         );
+        assert!(
+            foundation > ordinal + machine,
+            "foundation phrase should outrank the ordinal+machine character split"
+        );
+        assert!(
+            weight > whole + middle,
+            "weight phrase should outrank the whole+middle character split"
+        );
+    }
+
+    #[test]
+    fn applies_phrase_segment_bonus_only_to_multi_syllable_rows() {
+        let max_score = 327_781;
+        let single = libchewing_weight(507, max_score, 1);
+        let phrase = libchewing_weight(507, max_score, 2);
+
+        assert_eq!(phrase, single + LIBCHEWING_PHRASE_SEGMENT_BONUS);
+    }
+
+    #[test]
+    fn keeps_already_strong_phrases_on_original_scale() {
+        let max_score = 327_781;
+        let single = libchewing_weight(max_score, max_score, 1);
+        let phrase = libchewing_weight(max_score, max_score, 2);
+
+        assert_eq!(phrase, single);
+        assert!(phrase > LIBCHEWING_PHRASE_SEGMENT_BONUS_THRESHOLD);
+    }
+
+    #[test]
+    fn reranks_existing_same_qstring_candidates_with_rime_scores() {
+        let path = temp_file("rime-overlap", "賄選\t531\n會選\t662\n選成\t429\n");
+        let cfg = test_config();
+        let existing = vec![
+            ("=fBZ".to_string(), "賄選".to_string(), -0.885961),
+            ("=fBZ".to_string(), "會選".to_string(), -1.215681),
+            ("BZ=M".to_string(), "選成".to_string(), -1.640198),
+        ];
+
+        let (records, seen, skipped) = parse_rime_overlap_reranks(&path, &cfg, &existing).unwrap();
+
+        assert_eq!(seen, 3);
+        assert_eq!(skipped, 0);
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].qstring, "=fBZ");
+        assert_eq!(records[0].phrase, "會選");
+        assert_eq!(records[0].weight, -0.885961 + RIME_OVERLAP_RERANK_MARGIN);
+        assert_eq!(records[0].tags, "unigram,rime-essay,overlap-rerank");
+
+        let _ = fs::remove_file(path);
     }
 
     fn temp_file(name: &str, content: &str) -> PathBuf {

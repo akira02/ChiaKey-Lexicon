@@ -199,6 +199,7 @@ The release builder imports these pinned files:
 
 Starting in `2026.06.5`, single-character rows from `tsi.csv` are also imported as a character-frequency correction layer. This lets common characters such as `我` keep their libchewing frequency instead of tying with rare same-reading characters from the bootstrap database.
 The character-frequency mapping keeps a small single-character segmentation penalty so common characters do not accidentally outrank explicit phrase rows with the same reading.
+Lower-ranked multi-character libchewing rows also receive a bounded segment bonus so known phrases such as `地基` and `權重` can outrank same-reading character-by-character splits without pushing already-strong phrases beyond the original top of the phrase scale.
 
 The raw files are fetched by:
 
@@ -249,7 +250,11 @@ sources/bpmf-ext-cin/source-inventory.sha256
 - Attribution: Rime essay contributors
 - Redistribution decision: included for public releases starting in `2026.06.3`
 
-Rime essay is imported as a low-priority supplemental phrase layer. It has useful modern vocabulary and scores, but it does not include Zhuyin readings. The release builder therefore imports only entries that satisfy all of these constraints:
+Rime essay has useful modern vocabulary and scores, but it does not include Zhuyin readings. The release builder therefore uses it only after another source has supplied a reading.
+
+First, an overlap rerank pass uses Rime scores to promote existing candidates inside the same KeyKey qstring group. This pass only raises lower-ranked candidates enough to respect Rime's ordering, never demotes existing rows, and caps promotions so Rime cannot push an ambiguous candidate beyond the established high-frequency phrase range.
+
+Then a low-priority supplemental phrase pass imports entries that satisfy all of these constraints:
 
 1. The phrase is not already present after the libchewing-data import.
 2. The phrase length is between 2 and 7 Unicode codepoints.

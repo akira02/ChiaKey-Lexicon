@@ -2,37 +2,37 @@
   "artifacts": [
     {
       "database_schema_version": 1,
-      "filename": "KeyKeySource-2026.06.7.db",
+      "filename": "KeyKeySource-2026.06.9.db",
       "id": "smart-mandarin-db",
       "kind": "keykey-source-db",
-      "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "a53225e784852f140de5658adf9a5552ac70fa057160eb5addf008d1b3261792",
-      "size": 51281920,
-      "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/KeyKeySource-2026.06.7.db"
+      "language_model_version": "chiakey-modern-2026.06.9",
+      "sha256": "4a2dcd4d5c06721b120c9e5eb179a4bf236b29f200463c67c244a2a5e2c33965",
+      "size": 51576832,
+      "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.9/KeyKeySource-2026.06.9.db"
     },
     {
       "database_schema_version": 1,
-      "filename": "KeyKeySource-2026.06.7.json",
+      "filename": "KeyKeySource-2026.06.9.json",
       "id": "smart-mandarin-metadata",
       "kind": "metadata",
-      "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "0f60d68bf86f1df504e586f37c4da7c546ea788b72d524deac76f0eff2366ac4",
-      "size": 20661,
-      "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/KeyKeySource-2026.06.7.json"
+      "language_model_version": "chiakey-modern-2026.06.9",
+      "sha256": "7f74cb5a46c540fcd872806e05152f2a4454a63b02f12ec5df4c9b648e1936e7",
+      "size": 20961,
+      "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.9/KeyKeySource-2026.06.9.json"
     },
     {
       "database_schema_version": 1,
       "filename": "SHA256SUMS",
       "id": "smart-mandarin-checksums",
       "kind": "checksum",
-      "language_model_version": "chiakey-modern-2026.06.7",
-      "sha256": "87d022812c0b1f6582965b72e18226d184db7e487afc943c84f1ba28cebb8d78",
+      "language_model_version": "chiakey-modern-2026.06.9",
+      "sha256": "39379474756e8d87d8232269576103adf8a27e6b017e5cc7b75fc4275d22b58e",
       "size": 186,
-      "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.7/SHA256SUMS"
+      "url": "https://github.com/akira02/ChiaKey-Lexicon/releases/download/2026.06.9/SHA256SUMS"
     }
   ],
   "database_schema_version": 1,
-  "generated_at": "2026-06-23T08:03:41Z",
+  "generated_at": "2026-06-23T09:58:13Z",
   "minimum_app_version": "0.1.0",
   "schema": 1,
   "sources": [
@@ -147,5 +147,5 @@
       "url": "https://github.com/BYVoid/OpenCC"
     }
   ],
-  "version": "2026.06.7"
+  "version": "2026.06.9"
 }

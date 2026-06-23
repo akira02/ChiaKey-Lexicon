@@ -468,6 +468,23 @@ pub fn load_existing_phrases(conn: &Connection) -> Result<HashSet<String>> {
         .map_err(Into::into)
 }
 
+pub fn load_existing_phrase_weights(conn: &Connection) -> Result<Vec<(String, String, f64)>> {
+    let mut stmt = conn.prepare(
+        "SELECT qstring, current, probability
+         FROM unigrams
+         WHERE current <> ''",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, f64>(2)?,
+        ))
+    })?;
+    rows.collect::<std::result::Result<Vec<_>, _>>()
+        .map_err(Into::into)
+}
+
 pub fn load_primary_character_readings(conn: &Connection) -> Result<HashMap<String, String>> {
     let mut stmt = conn.prepare(
         "SELECT qstring, current, probability

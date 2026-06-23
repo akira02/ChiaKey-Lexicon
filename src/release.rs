@@ -52,6 +52,13 @@ pub fn run() -> Result<()> {
         &mut source_keys,
         &mut import_results,
     )?;
+    import_rime_overlap_rerank(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
     import_rime(
         &mut conn,
         &cfg,
@@ -481,6 +488,34 @@ fn import_rime(
         records,
         &repo_relative(&cfg.root, &paths.rime_essay_raw)?,
         "rime-supplement",
+        &sha256_file(&paths.rime_essay_raw)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+    Ok(())
+}
+
+fn import_rime_overlap_rerank(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let existing_records = db::load_existing_phrase_weights(conn)?;
+    let (records, seen, skipped) =
+        importers::parse_rime_overlap_reranks(&paths.rime_essay_raw, cfg, &existing_records)?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &format!(
+            "{}#overlap-rerank",
+            repo_relative(&cfg.root, &paths.rime_essay_raw)?
+        ),
+        "rime-overlap-rerank",
         &sha256_file(&paths.rime_essay_raw)?,
         seen,
         skipped,
