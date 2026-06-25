@@ -4,7 +4,7 @@
 
 千秋輸入法詞庫（ChiaKey Lexicon）是千秋輸入法（ChiaKey）的詞庫資料 repository。
 
-主 app repository 應該專注在 macOS 輸入法 runtime、資料庫讀取、builder script、安裝工具，以及一份小型 bundled fallback database。這個 repository 則負責持續演進的詞庫資料、來源 manifest、授權紀錄、release database artifacts、checksums 與 changelog。
+主輸入法的 repository 應該專注在 macOS 輸入法 runtime、資料庫讀取、builder script、安裝工具，以及一份小型 bundled fallback database。這個 repository 則負責持續演進的詞庫資料、來源 manifest、授權紀錄、release database artifacts、checksums 與 changelog。
 
 ## 分工
 
@@ -27,16 +27,16 @@
 
 ## 目前狀態
 
-這個 repository 已有可運作的 seed release pipeline。push 到 `main` 會透過 GitHub Actions 建置並發布版本化詞庫 release。
-
 目前 pipeline 會從已審查來源資料、專案維護修正、生成 metadata、source inventories 與 checksum manifests 建出完整的 `KeyKeySource.db`。本機 release artifacts 會輸出到 `dist/<version>/`，CI 則會上傳到 GitHub Releases。
 
-建議先看：
+合併到 `main` 後，會透過 GitHub Actions 建置並發布版本化詞庫 release。
+
+詳細請見：
 
 - [Docs/ReleaseFlow.zh-TW.md](Docs/ReleaseFlow.zh-TW.md)
 - [Docs/SourceReview.md](Docs/SourceReview.md)
 
-建立本機 release package：
+若要建立本機 release package 請執行：
 
 ```sh
 cargo run --release -- prepare-release
@@ -50,15 +50,15 @@ cargo run --release -- prepare-release
 2. `LICENSES/` 記錄每個可公開 release source 所需的 license text 或 license notes。
 3. `src/` 是 Rust release toolchain，負責驗證 inputs、將資料層匯入 KeyKey database shape、寫出 generated audit artifacts、更新 release metadata、產生 manifests。
 4. `normalized/smart-mandarin.tsv` 是 Smart Mandarin language-model rows 的 generated normalized audit view，不 commit。
-5. `manifests/lexicon-manifest.json` 是 app 端消費的 generated update contract。
+5. `manifests/lexicon-manifest.json` 是輸入法端消費的 generated update contract。
 6. `dist/<version>/` 是本機 release artifacts staging 目錄，不 commit。
 
 資料層大致分成四類：
 
-1. **Runtime compatibility data**：app 既有 database reader 與 input modules 需要的 KeyKey-origin data。
+1. **Runtime compatibility data**：原輸入法既有的 database reader 與 input modules 需要的 KeyKey-origin data。
 2. **Lexicon sources**：現代繁中 / 注音詞彙，以及補充字詞 coverage。
 3. **Project-owned corrections**：小型 overlay，用來修已知輸入缺漏、指定讀音、調整候選排序。
-4. **Policy layers**：小型已審查規則，讓預設繁中 release 符合 app 的語言與地區期待。
+4. **Policy layers**：小型已審查規則，讓預設繁中 release 符合輸入法的語言與地區期待。
 
 ## 目前資料來源
 
@@ -67,7 +67,7 @@ cargo run --release -- prepare-release
 | Source | 為什麼選用 | 負責什麼 |
 | --- | --- | --- |
 | `keykey-boneyard-bootstrap` | ChiaKey 的 runtime 和 database reader 原本就建立在 KeyKey / Yahoo KeyKey 的資料形狀上；用 cooked bootstrap DB 可以保留既有 schema、metadata 與基本注音資料。 | 作為 release DB 的初始基底。builder 先複製這份 `KeyKeySource.db`，後續 sources 再疊加或替換資料。 |
-| `keykey-punctuations-cin` | 標點不是一般詞彙，但 Smart Mandarin runtime 會查 `_punctuation_*`、`_ctrl_*` 等 key；缺少時 app 端會拒絕或得到空符號表。 | 從原始 `bpmf-punctuations.cin` 匯入 BPMF 標點與符號列表，寫入 `unigrams` 和 `Mandarin-bpmf-cin`。 |
+| `keykey-punctuations-cin` | 標點不是一般詞彙，但 Smart Mandarin runtime 會查 `_punctuation_*`、`_ctrl_*` 等 key；缺少時輸入法端會拒絕或得到空符號表。 | 從原始 `bpmf-punctuations.cin` 匯入 BPMF 標點與符號列表，寫入 `unigrams` 和 `Mandarin-bpmf-cin`。 |
 | `chiakey-symbols-overlay` | Yahoo 原始符號列表偏舊，缺少現代常用的貨幣、數學、圈號數字、勾叉、音樂與其他特殊符號；這些補充屬於 ChiaKey 自有維護資料。 | 只追加 `_punctuation_list` 候選，並跳過 Yahoo 原表已有符號，不改任何直接按鍵標點映射。 |
 | `keykey-prepopulated-service-data` | canned messages 仍是 ChiaKey 會讀取的預載資料，需要跟 release DB 一起提供，並帶正值 timestamp 才不會被 user DB 空資料蓋掉。 | 寫入 `prepopulated_service_data/canned_messages` 和 `canned_messages_timestamp`。builder 會把 supplemental symbol overlay 依類型追加成多個符號表分類，並以 Mozc 顏文字資料取代原本帶說明文字的內建 `顏文字` 列表。已移除不用的 OneKey service data。 |
 | `mozc-emoticon-data` | Mozc 是 Google Japanese Input 的開源版，提供乾淨、可再散布的日文 IME 顏文字資料。 | 供 canned messages 的 `顏文字` 分類使用。builder 只輸出顏文字本體，不把日文讀音或描述放進符號表列表。 |
@@ -101,7 +101,7 @@ release builder 的整合流程是 deterministic 的：
 12. 從最終 `unigrams` 派生 `associated_phrases`，供聯想詞提示使用。
 13. 執行 runtime-required validations，寫出 normalized TSV、release metadata、manifest 與 checksums。
 
-整合後，每筆可追蹤的詞庫 row 會帶有 source path、source kind、checksum 與 tags；app 端消費的是最後生成的 `KeyKeySource.db` 和 `lexicon-manifest.json`，維護端可在本機 build 後從 generated `normalized/smart-mandarin.tsv` 和 metadata 回查來源。
+整合後，每筆可追蹤的詞庫 row 會帶有 source path、source kind、checksum 與 tags；輸入法端消費的是最後生成的 `KeyKeySource.db` 和 `lexicon-manifest.json`，維護端可在本機 build 後從 generated `normalized/smart-mandarin.tsv` 和 metadata 回查來源。
 
 各來源的授權、redistribution decision 與風險紀錄放在 [Docs/SourceReview.md](Docs/SourceReview.md)。日常 release 操作放在 [Docs/ReleaseFlow.zh-TW.md](Docs/ReleaseFlow.zh-TW.md)。
 
@@ -146,7 +146,7 @@ lexicon-manifest.json
 SHA256SUMS
 ```
 
-主 app 應下載並驗證 `lexicon-manifest.json`，再把相容的 `KeyKeySource` database 安裝到：
+輸入法端應下載並驗證 `lexicon-manifest.json`，再把相容的 `KeyKeySource` database 安裝到：
 
 ```text
 ~/Library/Application Support/ChiaKey/Lexicons/

@@ -1,6 +1,6 @@
 # 詞庫 Release 流程
 
-這份文件記錄千秋輸入法詞庫（ChiaKey Lexicon）目前的 release 流程。原則是：日常開發走 `dev`，只有準備發版時才合併到 `main`，而 `main` 每次更新都會產生一版新的詞庫 release。
+這份文件記錄千秋輸入法詞庫（ChiaKey Lexicon）目前的 release 流程。原則是：日常開發走 `dev`，只有準備發版時才合併到 `main`，而 `main` 每次更新都會產生一版新的詞庫 release，並且會由輸入法端消費並自動更新。
 
 ## Branch 角色
 
@@ -60,7 +60,7 @@ YYYY.MM.N
 GitHub Actions 的 release workflow 觸發條件：
 
 - push 到 `main`
-- 手動 `workflow_dispatch`
+- 亦可手動觸發 `workflow_dispatch`
 
 workflow 會做：
 
