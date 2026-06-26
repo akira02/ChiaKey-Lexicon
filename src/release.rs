@@ -130,6 +130,13 @@ pub fn run() -> Result<()> {
         &mut source_keys,
         &mut import_results,
     )?;
+    import_single_char_homophone_rerank(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
     import_chiaki_synthetic_bigrams(&mut conn, &cfg, &paths, &mut import_results)?;
     import_openformosa_common_voice_bigrams(&mut conn, &cfg, &paths, &mut import_results)?;
     import_chiaki_web_bigrams(&mut conn, &cfg, &paths, &mut import_results)?;
@@ -806,6 +813,37 @@ fn import_opencc_variant_policy(
     Ok(())
 }
 
+fn import_single_char_homophone_rerank(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let existing_records = db::load_existing_phrase_weights(conn)?;
+    let (records, seen, skipped) = importers::parse_single_char_homophone_reranks(
+        &paths.rime_essay_raw,
+        &existing_records,
+        cfg.homophone_rerank_min_ratio,
+    )?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &format!(
+            "{}#homophone-rerank",
+            repo_relative(&cfg.root, &paths.rime_essay_raw)?
+        ),
+        "rime-homophone-rerank",
+        &sha256_file(&paths.rime_essay_raw)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+    Ok(())
+}
+
 fn import_fragment_demotions(
     conn: &mut Connection,
     cfg: &Config,
@@ -956,8 +994,7 @@ fn import_chiaki_synthetic_bigrams(
     let (records, seen, skipped) =
         importers::parse_bigram_overlay(&paths.chiaki_synthetic_bigrams, cfg)?;
     let unigrams = db::load_best_unigram_weights_by_current(conn)?;
-    let records =
-        importers::calibrate_bigram_boost(records, cfg.synthetic_bigram_boost, &unigrams);
+    let records = importers::calibrate_bigram_boost(records, cfg.synthetic_bigram_boost, &unigrams);
     let result = db::apply_bigram_records(
         conn,
         &records,

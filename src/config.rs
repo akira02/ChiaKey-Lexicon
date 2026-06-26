@@ -123,6 +123,9 @@ pub struct Config {
     // 0 = raw passthrough.
     pub synthetic_bigram_boost: f64,
     pub commonvoice_bigram_boost: f64,
+    // Min rime-essay frequency advantage for a homophone to be promoted to its
+    // reading group's top single-char candidate (see single-char homophone rerank).
+    pub homophone_rerank_min_ratio: f64,
     pub dist_dir: PathBuf,
     pub normalized_path: PathBuf,
     pub manifest_path: PathBuf,
@@ -151,6 +154,9 @@ pub fn load() -> Result<Config> {
     let commonvoice_bigram_boost = env_or("COMMONVOICE_BIGRAM_BOOST", "1.5")
         .parse()
         .context("parse COMMONVOICE_BIGRAM_BOOST")?;
+    let homophone_rerank_min_ratio = env_or("HOMOPHONE_RERANK_MIN_RATIO", "2.5")
+        .parse()
+        .context("parse HOMOPHONE_RERANK_MIN_RATIO")?;
     let boneyard_checkout_root = env::var("KEYKEY_BONEYARD_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|_| root.join("..").join("KeyKey-Boneyard"));
@@ -189,6 +195,7 @@ pub fn load() -> Result<Config> {
         rime_essay_min_score,
         synthetic_bigram_boost,
         commonvoice_bigram_boost,
+        homophone_rerank_min_ratio,
         dist_dir,
         normalized_path,
         manifest_path,

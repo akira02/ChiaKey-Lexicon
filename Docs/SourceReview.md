@@ -106,6 +106,8 @@ Rime essay 有可用的現代詞彙與分數，但不包含注音讀音。因此
 
 首先，overlap rerank pass 會用 Rime scores 提升同一 KeyKey qstring group 內的既有候選。這個 pass 只會把較低排序的候選提升到足以尊重 Rime ordering，不會 demote 既有 rows，也會限制 promotion，避免 Rime 把 ambiguous candidate 推過既有高頻詞範圍。
 
+另有 single-character homophone rerank pass 會處理 libchewing 單字頻率對同音字近乎攤平的問題。它只在同一單字 qstring group 內比較 Rime essay 單字頻率，而且 Rime winner 與目前 top candidate 都必須有 Rime 單字頻率；預設 winner 至少要有 `5x` 頻率優勢，才會被小幅提升到目前 top 之上。這個 pass 只 raise，不 demote。
+
 接著，低優先補充詞 pass 會匯入符合以下條件的 entries：
 
 1. 該詞在 libchewing-data 匯入後尚不存在。
