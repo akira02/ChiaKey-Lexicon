@@ -26,7 +26,7 @@
       "sha256": "TBD",
       "size": 0,
       "database_schema_version": 1,
-      "language_model_version": "chiakey-modern-2026.06"
+      "language_model_version": "2026.06"
     }
   ]
 }
