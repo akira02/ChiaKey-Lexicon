@@ -106,6 +106,8 @@ Rime essay 有可用的現代詞彙與分數，但不包含注音讀音。因此
 
 首先，overlap rerank pass 會用 Rime scores 提升同一 KeyKey qstring group 內的既有候選。這個 pass 只會把較低排序的候選提升到足以尊重 Rime ordering，不會 demote 既有 rows，也會限制 promotion，避免 Rime 把 ambiguous candidate 推過既有高頻詞範圍。
 
+另有 single-character homophone rerank pass 會處理 libchewing 單字頻率對同音字近乎攤平的問題。它只在同一單字 qstring group 內比較 Rime essay 單字頻率，而且 Rime winner 與目前 top candidate 都必須有 Rime 單字頻率；預設 winner 至少要有 `5x` 頻率優勢，才會被小幅提升到目前 top 之上。這個 pass 只 raise，不 demote。
+
 接著，低優先補充詞 pass 會匯入符合以下條件的 entries：
 
 1. 該詞在 libchewing-data 匯入後尚不存在。
@@ -239,6 +241,38 @@ sources/keykey-module-cin/source-inventory.sha256
 這個來源是由 OpenCC 簡繁轉換知識衍生的小型 reviewed policy table。它不會被當作 frequency dictionary 匯入；release builder 只在簡體或非台灣偏好的 variants 原本會與繁體候選 tie 時降低其排序。
 
 第一列會降低 `个`，也就是 `個` 的簡體 counterpart，讓 neutral-tone `ㄍㄜ˙` / `ek7` 不會只因 tie-break 排在 `個` 前面。
+
+## 自 2026.06.8 起納入
+
+### chiakey-auto-hotwords-overlay
+
+- 名稱：ChiaKey automatically refreshed hotwords overlay
+- 本地來源：
+  - `sources/chiakey-auto-hotwords-overlay/phrases.tsv`
+  - `sources/chiakey-auto-hotwords-overlay/state.json`
+- 授權：CC0-1.0 for the generated overlay rows maintained in this repository
+- 署名：ChiaKey Lexicon maintainers
+- 再散布決策：納入公開 release
+
+這個來源是自動維護的短期熱詞補充層。Google Trends 只作為 discovery signal；
+daily collector 會查詢 24 小時、48 小時與 7 天 trending windows，並把最小化、
+正規化後的 observations 存成 GitHub Actions artifacts。weekly refresh 才會彙整狀態
+並寫出本 repository 自有的 `phrases.tsv`。
+
+repository 不保存 Google Trends 的原始 CSV、排名表、新聞摘要或完整 related queries。
+`state.json` 只保存每個候選詞的最小聚合狀態，例如 `first_seen`、`last_seen`、
+`seen_dates` 與 `max_traffic`，用於自動權重與過期清理。
+
+自動收詞規則刻意保守：
+
+1. 只保留正規化後的純漢字詞。
+2. 排除英數、5 字以上詞、查詢型詞。
+3. 排除本地詞庫已存在的詞。
+4. 排除已可由 top-ranked 既有 segments 打出的詞。
+5. 排除無法從既有單字讀音推導 qstring 的詞。
+6. 7 天 window 只作為佐證；單一 `7d` observation 不會自行進入 overlay。
+
+這個來源的 rows 會隨時間自動衰退與移除，不應視為人工審核或永久詞彙層。
 
 ## 自 2026.06.9 起納入
 

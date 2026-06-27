@@ -47,12 +47,18 @@ pub const CHIAKI_WEB_OVERLAY_SOURCE_NAME: &str = "Chiaki reviewed web corpus ove
 pub const CHIAKI_SYNTHETIC_SOURCE_ID: &str = "chiaki-synthetic-overlay";
 pub const CHIAKI_SYNTHETIC_SOURCE_NAME: &str =
     "Chiaki.C GPT-5.5 synthetic Taiwan internet usage overlay";
+pub const CHIAKEY_AUTO_HOTWORDS_SOURCE_ID: &str = "chiakey-auto-hotwords-overlay";
+pub const CHIAKEY_AUTO_HOTWORDS_SOURCE_NAME: &str =
+    "ChiaKey automatically refreshed hotwords overlay";
 pub const OPENFORMOSA_COMMON_VOICE_SOURCE_ID: &str = "openformosa-common-voice-25-zh-tw";
 pub const OPENFORMOSA_COMMON_VOICE_SOURCE_NAME: &str =
     "OpenFormosa Common Voice 25 zh-TW bigram overlay";
 pub const OPENCC_VARIANT_SOURCE_ID: &str = "opencc-variant-policy";
 pub const OPENCC_VARIANT_SOURCE_NAME: &str = "OpenCC-derived Traditional Chinese variant policy";
+pub const FRAGMENT_DENYLIST_SOURCE_ID: &str = "chiakey-fragment-denylist";
+pub const FRAGMENT_DENYLIST_SOURCE_NAME: &str = "ChiaKey non-lexical fragment weight caps";
 pub const DATABASE_SCHEMA_VERSION: i64 = 1;
+pub const DEFAULT_RELEASE_VERSION: &str = "dev";
 
 pub const DOWNLOADS: &[SourceDownload] = &[
     SourceDownload {
@@ -112,6 +118,14 @@ pub struct Config {
     pub release_base_url: String,
     pub max_phrase_codepoints: usize,
     pub rime_essay_min_score: i64,
+    // How much each source's strongest collocation should beat its unigram floor
+    // when re-anchored to the unigram scale (see importers::calibrate_bigram_boost).
+    // 0 = raw passthrough.
+    pub synthetic_bigram_boost: f64,
+    pub commonvoice_bigram_boost: f64,
+    // Min rime-essay frequency advantage for a homophone to be promoted to its
+    // reading group's top single-char candidate (see single-char homophone rerank).
+    pub homophone_rerank_min_ratio: f64,
     pub dist_dir: PathBuf,
     pub normalized_path: PathBuf,
     pub manifest_path: PathBuf,
@@ -119,7 +133,7 @@ pub struct Config {
 
 pub fn load() -> Result<Config> {
     let root = env::current_dir().context("read current directory")?;
-    let release_version = env_or("LEXICON_VERSION", "2026.06.9");
+    let release_version = env_or("LEXICON_VERSION", DEFAULT_RELEASE_VERSION);
     let language_model_version = format!("chiakey-modern-{release_version}");
     let minimum_app_version = env_or("MINIMUM_APP_VERSION", "0.1.0");
     let generated_at = env::var("GENERATED_AT")
@@ -134,6 +148,15 @@ pub fn load() -> Result<Config> {
     let rime_essay_min_score = env_or("RIME_ESSAY_MIN_SCORE", "40")
         .parse()
         .context("parse RIME_ESSAY_MIN_SCORE")?;
+    let synthetic_bigram_boost = env_or("SYNTHETIC_BIGRAM_BOOST", "1.5")
+        .parse()
+        .context("parse SYNTHETIC_BIGRAM_BOOST")?;
+    let commonvoice_bigram_boost = env_or("COMMONVOICE_BIGRAM_BOOST", "1.5")
+        .parse()
+        .context("parse COMMONVOICE_BIGRAM_BOOST")?;
+    let homophone_rerank_min_ratio = env_or("HOMOPHONE_RERANK_MIN_RATIO", "2.5")
+        .parse()
+        .context("parse HOMOPHONE_RERANK_MIN_RATIO")?;
     let boneyard_checkout_root = env::var("KEYKEY_BONEYARD_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|_| root.join("..").join("KeyKey-Boneyard"));
@@ -170,6 +193,9 @@ pub fn load() -> Result<Config> {
         release_base_url,
         max_phrase_codepoints,
         rime_essay_min_score,
+        synthetic_bigram_boost,
+        commonvoice_bigram_boost,
+        homophone_rerank_min_ratio,
         dist_dir,
         normalized_path,
         manifest_path,

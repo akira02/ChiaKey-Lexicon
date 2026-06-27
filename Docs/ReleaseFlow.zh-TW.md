@@ -16,24 +16,24 @@
 
 ## 本機建置
 
-建 release package：
+建本機檢查用 package：
 
 ```sh
 cargo run --release -- prepare-release
 ```
 
-預設會輸出：
+未設定 `LEXICON_VERSION` 時會使用 `dev` placeholder，預設輸出：
 
 ```text
 normalized/smart-mandarin.tsv
 manifests/lexicon-manifest.json
-dist/<version>/KeyKeySource-<version>.db
-dist/<version>/KeyKeySource-<version>.json
-dist/<version>/lexicon-manifest.json
-dist/<version>/SHA256SUMS
+dist/dev/KeyKeySource-dev.db
+dist/dev/KeyKeySource-dev.json
+dist/dev/lexicon-manifest.json
+dist/dev/SHA256SUMS
 ```
 
-若要指定版本：
+只有測試或重現既有 release 時才需要覆寫版本：
 
 ```sh
 LEXICON_VERSION=2026.06.4 cargo run --release -- prepare-release
@@ -45,6 +45,30 @@ LEXICON_VERSION=2026.06.4 cargo run --release -- prepare-release
 BONEYARD_DB=/path/to/KeyKeySource.db cargo run --release -- prepare-release
 ```
 
+## 本機安裝到 active（輸入法測試）
+
+要讓本機輸入法載入剛建好的 dev 詞庫，用：
+
+```sh
+scripts/install-dev-lexicon.sh            # build + 備份 + 安裝 + 切換 active
+scripts/install-dev-lexicon.sh --no-build # 直接安裝現有的 dist/dev build
+```
+
+腳本會把 `dist/dev/` 的產物改名搬進 active 佈局（輸入法跟著 `active` symlink 載入）：
+
+```text
+~/Library/Application Support/ChiaKey/Lexicons/
+├── active                  -> versions/local-dev   （symlink）
+└── versions/
+    ├── local-dev/
+    │   ├── ChiaKeySource.db          ← dist/dev/KeyKeySource-dev.db
+    │   ├── metadata.json             ← dist/dev/KeyKeySource-dev.json
+    │   └── lexicon-manifest.json
+    └── local-dev-backup-<timestamp>/ ← 覆蓋前自動備份的舊 slot
+```
+
+可用環境變數覆寫：`ACTIVE_ROOT`（active 根目錄）、`SLOT`（版本槽名，預設 `local-dev`）。安裝後重啟輸入法或重新切換輸入來源即可載入新 DB。
+
 ## 版本規則
 
 公開 release tag 使用：
@@ -53,7 +77,7 @@ BONEYARD_DB=/path/to/KeyKeySource.db cargo run --release -- prepare-release
 YYYY.MM.N
 ```
 
-例如 `2026.06.4`。`YYYY.MM` 以 Asia/Taipei 日期為準，`N` 是當月流水號。CI 在 `main` 自動 release 時會讀取既有 tag，取同月份最大流水號再加一。
+例如 `2026.06.4`。`YYYY.MM` 以 Asia/Taipei 日期為準，`N` 是當月流水號。CI 在 `main` 自動 release 時會讀取既有 tag，取同月份最大流水號再加一，並透過 `LEXICON_VERSION` 注入 release builder。repo 裡不需要手動更新公開版號。
 
 ## CI/CD
 
@@ -65,7 +89,7 @@ GitHub Actions 的 release workflow 觸發條件：
 workflow 會做：
 
 1. 安裝 Rust 與 SQLite 依賴。
-2. 計算 release 版本。
+2. 用 `scripts/compute-release-version.sh` 計算 release 版本並注入 builder。
 3. 跑 `cargo test`。
 4. 執行 `cargo run --release -- prepare-release`。
 5. 驗證 `SHA256SUMS`。
@@ -107,7 +131,7 @@ feature branch -> dev
 dev -> main
 ```
 
-合併到 `main` 後 CI 會自動建立新版 GitHub Release。若需要指定版本，可以手動執行 release workflow 並填入 `version`。
+合併到 `main` 後 CI 會自動建立新版 GitHub Release。若需要指定版本，可以手動執行 release workflow 並填入 `version`；一般發版不需要改 repository 裡的版號。
 
 ## Release 後檢查
 

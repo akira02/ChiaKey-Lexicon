@@ -67,6 +67,13 @@ pub fn run() -> Result<()> {
         &mut source_keys,
         &mut import_results,
     )?;
+    import_rime_existing_phrase_rerank(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
     import_rime(
         &mut conn,
         &cfg,
@@ -102,7 +109,28 @@ pub fn run() -> Result<()> {
         &mut source_keys,
         &mut import_results,
     )?;
+    import_chiakey_auto_hotwords_overlay(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
     import_opencc_variant_policy(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
+    import_fragment_demotions(
+        &mut conn,
+        &cfg,
+        &paths,
+        &mut source_keys,
+        &mut import_results,
+    )?;
+    import_single_char_homophone_rerank(
         &mut conn,
         &cfg,
         &paths,
@@ -192,8 +220,11 @@ fn verify_inputs(
         paths.chiaki_web_overlay_bigrams.clone(),
         paths.chiaki_synthetic_unigrams.clone(),
         paths.chiaki_synthetic_bigrams.clone(),
+        paths.chiakey_auto_hotwords_phrases.clone(),
+        paths.chiakey_auto_hotwords_state.clone(),
         paths.openformosa_common_voice_bigrams.clone(),
         paths.opencc_variant_demotions.clone(),
+        paths.fragment_demotions.clone(),
         paths.rime_essay_raw.clone(),
     ];
     required.extend(module_cin_files(paths));
@@ -218,8 +249,10 @@ fn create_output_dirs(cfg: &Config, paths: &ReleasePaths) -> Result<()> {
     fs::create_dir_all(&paths.overlay_source_dir)?;
     fs::create_dir_all(&paths.chiaki_web_overlay_source_dir)?;
     fs::create_dir_all(&paths.chiaki_synthetic_source_dir)?;
+    fs::create_dir_all(&paths.chiakey_auto_hotwords_source_dir)?;
     fs::create_dir_all(&paths.openformosa_common_voice_source_dir)?;
     fs::create_dir_all(&paths.opencc_variant_source_dir)?;
+    fs::create_dir_all(&paths.fragment_denylist_source_dir)?;
     Ok(())
 }
 
@@ -312,6 +345,15 @@ fn write_source_inventories(
         true,
     )?;
     write_inventory(
+        &paths.chiakey_auto_hotwords_inventory,
+        &paths.chiakey_auto_hotwords_source_dir,
+        &[
+            paths.chiakey_auto_hotwords_phrases.clone(),
+            paths.chiakey_auto_hotwords_state.clone(),
+        ],
+        true,
+    )?;
+    write_inventory(
         &paths.openformosa_common_voice_inventory,
         &paths.openformosa_common_voice_source_dir,
         std::slice::from_ref(&paths.openformosa_common_voice_bigrams),
@@ -321,6 +363,12 @@ fn write_source_inventories(
         &paths.opencc_variant_inventory,
         &paths.opencc_variant_source_dir,
         std::slice::from_ref(&paths.opencc_variant_demotions),
+        true,
+    )?;
+    write_inventory(
+        &paths.fragment_denylist_inventory,
+        &paths.fragment_denylist_source_dir,
+        std::slice::from_ref(&paths.fragment_demotions),
         true,
     )
 }
@@ -683,6 +731,39 @@ fn import_rime_overlap_rerank(
     Ok(())
 }
 
+fn import_rime_existing_phrase_rerank(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let existing_records = db::load_existing_phrase_weights(conn)?;
+    let existing_qstring_weights = db::load_best_qstring_weights(conn)?;
+    let (records, seen, skipped) = importers::parse_rime_existing_phrase_reranks(
+        &paths.rime_essay_raw,
+        cfg,
+        &existing_records,
+        &existing_qstring_weights,
+    )?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &format!(
+            "{}#existing-rerank",
+            repo_relative(&cfg.root, &paths.rime_essay_raw)?
+        ),
+        "rime-existing-rerank",
+        &sha256_file(&paths.rime_essay_raw)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+    Ok(())
+}
+
 fn import_overlay(
     conn: &mut Connection,
     cfg: &Config,
@@ -726,6 +807,60 @@ fn import_opencc_variant_policy(
         seen,
         skipped,
         config::OPENCC_VARIANT_SOURCE_ID,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+    Ok(())
+}
+
+fn import_single_char_homophone_rerank(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let existing_records = db::load_existing_phrase_weights(conn)?;
+    let (records, seen, skipped) = importers::parse_single_char_homophone_reranks(
+        &paths.rime_essay_raw,
+        &existing_records,
+        cfg.homophone_rerank_min_ratio,
+    )?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &format!(
+            "{}#homophone-rerank",
+            repo_relative(&cfg.root, &paths.rime_essay_raw)?
+        ),
+        "rime-homophone-rerank",
+        &sha256_file(&paths.rime_essay_raw)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+    Ok(())
+}
+
+fn import_fragment_demotions(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let (records, seen, skipped) = importers::parse_fragment_demotions(&paths.fragment_demotions)?;
+    let result = db::apply_variant_demotions(
+        conn,
+        &records,
+        &repo_relative(&cfg.root, &paths.fragment_demotions)?,
+        "fragment-demotion",
+        &sha256_file(&paths.fragment_demotions)?,
+        seen,
+        skipped,
+        config::FRAGMENT_DENYLIST_SOURCE_ID,
     )?;
     remember_records(source_keys, &result);
     import_results.push(result);
@@ -803,6 +938,32 @@ fn import_chiaki_synthetic_overlay(
     Ok(())
 }
 
+fn import_chiakey_auto_hotwords_overlay(
+    conn: &mut Connection,
+    cfg: &Config,
+    paths: &ReleasePaths,
+    source_keys: &mut HashMap<(String, String), SourceRecord>,
+    import_results: &mut Vec<ImportResult>,
+) -> Result<()> {
+    let (records, seen, parse_skipped) =
+        importers::parse_auto_hotwords_overlay(&paths.chiakey_auto_hotwords_phrases, cfg)?;
+    let (records, infer_skipped) =
+        importers::infer_overlay_qstrings(records, &db::load_primary_character_readings(conn)?);
+    let result = db::apply_records(
+        conn,
+        records,
+        &repo_relative(&cfg.root, &paths.chiakey_auto_hotwords_phrases)?,
+        "chiakey-auto-hotwords",
+        &sha256_file(&paths.chiakey_auto_hotwords_phrases)?,
+        seen,
+        parse_skipped + infer_skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+    Ok(())
+}
+
 fn import_chiaki_web_bigrams(
     conn: &mut Connection,
     cfg: &Config,
@@ -832,6 +993,8 @@ fn import_chiaki_synthetic_bigrams(
 ) -> Result<()> {
     let (records, seen, skipped) =
         importers::parse_bigram_overlay(&paths.chiaki_synthetic_bigrams, cfg)?;
+    let unigrams = db::load_best_unigram_weights_by_current(conn)?;
+    let records = importers::calibrate_bigram_boost(records, cfg.synthetic_bigram_boost, &unigrams);
     let result = db::apply_bigram_records(
         conn,
         &records,
@@ -853,6 +1016,9 @@ fn import_openformosa_common_voice_bigrams(
 ) -> Result<()> {
     let (records, seen, skipped) =
         importers::parse_bigram_overlay(&paths.openformosa_common_voice_bigrams, cfg)?;
+    let unigrams = db::load_best_unigram_weights_by_current(conn)?;
+    let records =
+        importers::calibrate_bigram_boost(records, cfg.commonvoice_bigram_boost, &unigrams);
     let result = db::apply_bigram_records(
         conn,
         &records,

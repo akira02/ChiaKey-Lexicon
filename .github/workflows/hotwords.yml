@@ -1,0 +1,138 @@
+name: Auto Hotwords
+
+on:
+  schedule:
+    # Daily collection at 04:00 Asia/Taipei.
+    - cron: "0 20 * * *"
+    # Weekly refresh at 04:30 Monday Asia/Taipei.
+    - cron: "30 20 * * 0"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Which part to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - collect
+          - refresh
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: hotwords-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: Collect daily hotwords
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'workflow_dispatch' && (inputs.mode == 'all' || inputs.mode == 'collect')) || github.event.schedule == '0 20 * * *' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Collect Google Trends observations
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed_on="$(TZ=Asia/Taipei date +%F)"
+          echo "observed_on=${observed_on}" >> "$GITHUB_OUTPUT"
+          node scripts/hotwords.mjs collect \
+            --date "${observed_on}" \
+            --output "tmp/hotwords-observations/${observed_on}.json"
+
+      - name: Upload observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: hotwords-observations-${{ steps.collect.outputs.observed_on }}
+          path: tmp/hotwords-observations/*.json
+          if-no-files-found: error
+          retention-days: 14
+
+  refresh:
+    name: Open weekly hotwords PR
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'workflow_dispatch' && (inputs.mode == 'all' || inputs.mode == 'refresh')) || github.event.schedule == '30 20 * * 0' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install SQLite dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libsqlite3-dev unzip
+
+      - name: Build current normalized lexicon
+        run: cargo run --release -- prepare-release
+
+      - name: Download recent hotword observation artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/hotwords-artifact-zips tmp/hotwords-observations
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false and (.name | startswith("hotwords-observations-"))) | "\(.id)\t\(.name)"' \
+            > tmp/hotwords-artifacts.tsv
+
+          if [[ ! -s tmp/hotwords-artifacts.tsv ]]; then
+            echo "No hotword observation artifacts found."
+            exit 0
+          fi
+
+          while IFS=$'\t' read -r artifact_id artifact_name; do
+            echo "Downloading ${artifact_name}"
+            zip_path="tmp/hotwords-artifact-zips/${artifact_name}.zip"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "${zip_path}"
+            unzip -oq "${zip_path}" -d "tmp/hotwords-observations/${artifact_name}"
+          done < tmp/hotwords-artifacts.tsv
+
+      - name: Refresh auto hotwords overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          today="$(TZ=Asia/Taipei date +%F)"
+          node scripts/hotwords.mjs refresh \
+            --today "${today}" \
+            --observations-dir tmp/hotwords-observations \
+            --state sources/chiakey-auto-hotwords-overlay/state.json \
+            --output sources/chiakey-auto-hotwords-overlay/phrases.tsv \
+            --summary tmp/hotwords-summary.md
+
+      - name: Verify refreshed release build
+        run: cargo run --release -- prepare-release
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: codex/auto-hotwords
+          delete-branch: true
+          commit-message: "chore(hotwords): refresh auto overlay"
+          title: "chore(hotwords): refresh auto overlay"
+          body-path: tmp/hotwords-summary.md
+          add-paths: |
+            sources/chiakey-auto-hotwords-overlay/phrases.tsv
+            sources/chiakey-auto-hotwords-overlay/state.json
+            sources/chiakey-auto-hotwords-overlay/source-inventory.sha256

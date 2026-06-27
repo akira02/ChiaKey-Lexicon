@@ -1,8 +1,9 @@
 use crate::config::{
     Config, BONEYARD_SOURCE_ID, BOPOMOFO_CORRECTION_VENDOR_PATH, BPMF_EXT_SOURCE_ID,
-    BPMF_EXT_VENDOR_PATH, CANNED_MESSAGES_VENDOR_PATH, CHIAKI_SYNTHETIC_SOURCE_ID,
-    CHIAKI_WEB_OVERLAY_SOURCE_ID, CJ_EXT_VENDOR_PATH, CJ_PUNCTUATIONS_HALFWIDTH_VENDOR_PATH,
-    CJ_PUNCTUATIONS_MIXEDWIDTH_VENDOR_PATH, LIBCHEWING_SOURCE_ID, MODULE_CIN_SOURCE_ID,
+    BPMF_EXT_VENDOR_PATH, CANNED_MESSAGES_VENDOR_PATH, CHIAKEY_AUTO_HOTWORDS_SOURCE_ID,
+    CHIAKI_SYNTHETIC_SOURCE_ID, CHIAKI_WEB_OVERLAY_SOURCE_ID, CJ_EXT_VENDOR_PATH,
+    CJ_PUNCTUATIONS_HALFWIDTH_VENDOR_PATH, CJ_PUNCTUATIONS_MIXEDWIDTH_VENDOR_PATH,
+    FRAGMENT_DENYLIST_SOURCE_ID, LIBCHEWING_SOURCE_ID, MODULE_CIN_SOURCE_ID,
     MOZC_EMOTICON_CATEGORIZED_PATH, MOZC_EMOTICON_SOURCE_ID, MOZC_EMOTICON_TSV_PATH,
     OPENCC_VARIANT_SOURCE_ID, OPENFORMOSA_COMMON_VOICE_SOURCE_ID, OVERLAY_SOURCE_ID,
     PREPOPULATED_SERVICE_SOURCE_ID, PUNCTUATION_SOURCE_ID, PUNCTUATION_VENDOR_PATH,
@@ -23,14 +24,18 @@ pub struct ReleasePaths {
     pub overlay_source_dir: PathBuf,
     pub chiaki_web_overlay_source_dir: PathBuf,
     pub chiaki_synthetic_source_dir: PathBuf,
+    pub chiakey_auto_hotwords_source_dir: PathBuf,
     pub openformosa_common_voice_source_dir: PathBuf,
     pub opencc_variant_source_dir: PathBuf,
+    pub fragment_denylist_source_dir: PathBuf,
     pub overlay_phrases: PathBuf,
     pub overlay_explicit: PathBuf,
     pub chiaki_web_overlay_explicit: PathBuf,
     pub chiaki_web_overlay_bigrams: PathBuf,
     pub chiaki_synthetic_unigrams: PathBuf,
     pub chiaki_synthetic_bigrams: PathBuf,
+    pub chiakey_auto_hotwords_phrases: PathBuf,
+    pub chiakey_auto_hotwords_state: PathBuf,
     pub openformosa_common_voice_bigrams: PathBuf,
     pub boneyard_inventory: PathBuf,
     pub punctuation_inventory: PathBuf,
@@ -56,9 +61,12 @@ pub struct ReleasePaths {
     pub overlay_inventory: PathBuf,
     pub chiaki_web_overlay_inventory: PathBuf,
     pub chiaki_synthetic_inventory: PathBuf,
+    pub chiakey_auto_hotwords_inventory: PathBuf,
     pub openformosa_common_voice_inventory: PathBuf,
     pub opencc_variant_inventory: PathBuf,
     pub opencc_variant_demotions: PathBuf,
+    pub fragment_denylist_inventory: PathBuf,
+    pub fragment_demotions: PathBuf,
     pub db_filename: String,
     pub metadata_filename: String,
     pub db: PathBuf,
@@ -85,11 +93,17 @@ impl ReleasePaths {
         let chiaki_web_overlay_source_dir =
             cfg.root.join("sources").join(CHIAKI_WEB_OVERLAY_SOURCE_ID);
         let chiaki_synthetic_source_dir = cfg.root.join("sources").join(CHIAKI_SYNTHETIC_SOURCE_ID);
+        let chiakey_auto_hotwords_source_dir = cfg
+            .root
+            .join("sources")
+            .join(CHIAKEY_AUTO_HOTWORDS_SOURCE_ID);
         let openformosa_common_voice_source_dir = cfg
             .root
             .join("sources")
             .join(OPENFORMOSA_COMMON_VOICE_SOURCE_ID);
         let opencc_variant_source_dir = cfg.root.join("sources").join(OPENCC_VARIANT_SOURCE_ID);
+        let fragment_denylist_source_dir =
+            cfg.root.join("sources").join(FRAGMENT_DENYLIST_SOURCE_ID);
         let db_filename = format!("KeyKeySource-{}.db", cfg.release_version);
         let metadata_filename = format!("KeyKeySource-{}.json", cfg.release_version);
 
@@ -100,6 +114,8 @@ impl ReleasePaths {
             chiaki_web_overlay_bigrams: chiaki_web_overlay_source_dir.join("bigrams.tsv"),
             chiaki_synthetic_unigrams: chiaki_synthetic_source_dir.join("unigrams.tsv"),
             chiaki_synthetic_bigrams: chiaki_synthetic_source_dir.join("bigrams.tsv"),
+            chiakey_auto_hotwords_phrases: chiakey_auto_hotwords_source_dir.join("phrases.tsv"),
+            chiakey_auto_hotwords_state: chiakey_auto_hotwords_source_dir.join("state.json"),
             openformosa_common_voice_bigrams: openformosa_common_voice_source_dir
                 .join("bigrams.tsv"),
             boneyard_inventory: boneyard_source_dir.join("source-inventory.sha256"),
@@ -128,10 +144,15 @@ impl ReleasePaths {
             chiaki_web_overlay_inventory: chiaki_web_overlay_source_dir
                 .join("source-inventory.sha256"),
             chiaki_synthetic_inventory: chiaki_synthetic_source_dir.join("source-inventory.sha256"),
+            chiakey_auto_hotwords_inventory: chiakey_auto_hotwords_source_dir
+                .join("source-inventory.sha256"),
             openformosa_common_voice_inventory: openformosa_common_voice_source_dir
                 .join("source-inventory.sha256"),
             opencc_variant_inventory: opencc_variant_source_dir.join("source-inventory.sha256"),
             opencc_variant_demotions: opencc_variant_source_dir.join("variant-demotions.tsv"),
+            fragment_denylist_inventory: fragment_denylist_source_dir
+                .join("source-inventory.sha256"),
+            fragment_demotions: fragment_denylist_source_dir.join("fragment-demotions.tsv"),
             db: cfg.dist_dir.join(&db_filename),
             metadata: cfg.dist_dir.join(&metadata_filename),
             checksum: cfg.dist_dir.join("SHA256SUMS"),
@@ -148,8 +169,10 @@ impl ReleasePaths {
             overlay_source_dir,
             chiaki_web_overlay_source_dir,
             chiaki_synthetic_source_dir,
+            chiakey_auto_hotwords_source_dir,
             openformosa_common_voice_source_dir,
             opencc_variant_source_dir,
+            fragment_denylist_source_dir,
             db_filename,
             metadata_filename,
         }
