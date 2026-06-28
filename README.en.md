@@ -96,7 +96,7 @@ Goal: project-maintained lexicon data that directly reflects ChiaKey usage conte
 - `chiaki-synthetic-overlay`: synthetic-corpus-derived unigram and bigram supplements.
 - `openformosa-common-voice-25-zh-tw`: selected bigram rows from Common Voice data.
 - `chiakey-auto-hotwords-overlay`: automatically refreshed hotwords overlay (project-output rows only).
-- `chiakey-symbols-overlay`: supplemental `_punctuation_list` symbols.
+- `chiakey-symbols-overlay`: supplemental `_punctuation_list` symbols and runtime punctuation candidates.
 
 ### Policy Layers
 

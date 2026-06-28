@@ -220,6 +220,7 @@ fn verify_inputs(
         paths.boneyard_inventory.clone(),
         paths.punctuation_cin.clone(),
         paths.symbol_overlay_symbols.clone(),
+        paths.symbol_overlay_alternatives.clone(),
         paths.canned_messages_plist.clone(),
         paths.mozc_emoticon_categorized.clone(),
         paths.mozc_emoticon_tsv.clone(),
@@ -462,6 +463,24 @@ fn import_symbol_overlay(
     source_keys: &mut HashMap<(String, String), SourceRecord>,
     import_results: &mut Vec<ImportResult>,
 ) -> Result<()> {
+    let existing_exact_keys = db::load_existing_exact_keys(conn)?;
+    let (records, seen, skipped) = punctuations::parse_symbol_alternatives(
+        &paths.symbol_overlay_alternatives,
+        &existing_exact_keys,
+    )?;
+    let result = db::apply_records(
+        conn,
+        records,
+        &repo_relative(&cfg.root, &paths.symbol_overlay_alternatives)?,
+        "chiakey-symbol-alternatives-overlay",
+        &sha256_file(&paths.symbol_overlay_alternatives)?,
+        seen,
+        skipped,
+        false,
+    )?;
+    remember_records(source_keys, &result);
+    import_results.push(result);
+
     let existing_exact_keys = db::load_existing_exact_keys(conn)?;
     let (records, seen, skipped) =
         punctuations::parse_symbol_overlay(&paths.symbol_overlay_symbols, &existing_exact_keys)?;

@@ -55,7 +55,10 @@ pub fn release_metadata(
             "CC0-1.0",
             "ChiaKey Lexicon maintainers",
             &paths.symbol_overlay_source_dir,
-            &[&paths.symbol_overlay_symbols],
+            &[
+                &paths.symbol_overlay_symbols,
+                &paths.symbol_overlay_alternatives,
+            ],
             db::stats_for_source_rows(source_rows, "sources/chiakey-symbols-overlay/"),
         )?,
         release_source_from_inventory(
@@ -234,7 +237,10 @@ pub fn manifest(
             "CC0-1.0",
             "ChiaKey Lexicon maintainers",
             &paths.symbol_overlay_source_dir,
-            &[&paths.symbol_overlay_symbols],
+            &[
+                &paths.symbol_overlay_symbols,
+                &paths.symbol_overlay_alternatives,
+            ],
             125,
         )?,
         manifest_source_from_inventory(

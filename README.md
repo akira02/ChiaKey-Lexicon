@@ -92,7 +92,7 @@ cargo run --release -- prepare-release
 - `chiaki-synthetic-overlay`：合成語料提煉的 unigram/bigram 補充。
 - `openformosa-common-voice-25-zh-tw`：從 Common Voice 句料挑選的 bigram rows。
 - `chiakey-auto-hotwords-overlay`：自動刷新 hotwords overlay（僅保留專案輸出 rows）。
-- `chiakey-symbols-overlay`：補 `_punctuation_list` 缺漏符號。
+- `chiakey-symbols-overlay`：補 `_punctuation_list` 缺漏符號與 runtime 標點候選。
 
 ### 校正層
 

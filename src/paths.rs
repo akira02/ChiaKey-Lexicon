@@ -7,7 +7,8 @@ use crate::config::{
     MOZC_EMOTICON_CATEGORIZED_PATH, MOZC_EMOTICON_SOURCE_ID, MOZC_EMOTICON_TSV_PATH,
     OPENFORMOSA_COMMON_VOICE_SOURCE_ID, OVERLAY_SOURCE_ID, PREPOPULATED_SERVICE_SOURCE_ID,
     PUNCTUATION_SOURCE_ID, PUNCTUATION_VENDOR_PATH, RIME_CONVERSION_SOURCE_ID,
-    RIME_ESSAY_SOURCE_ID, SIMPLEX_EXT_VENDOR_PATH, SYMBOL_OVERLAY_PATH, SYMBOL_OVERLAY_SOURCE_ID,
+    RIME_ESSAY_SOURCE_ID, SIMPLEX_EXT_VENDOR_PATH, SYMBOL_OVERLAY_ALTERNATIVES_PATH,
+    SYMBOL_OVERLAY_PATH, SYMBOL_OVERLAY_SOURCE_ID,
 };
 use std::path::PathBuf;
 
@@ -41,6 +42,7 @@ pub struct ReleasePaths {
     pub punctuation_inventory: PathBuf,
     pub punctuation_cin: PathBuf,
     pub symbol_overlay_symbols: PathBuf,
+    pub symbol_overlay_alternatives: PathBuf,
     pub prepopulated_service_inventory: PathBuf,
     pub canned_messages_plist: PathBuf,
     pub mozc_emoticon_inventory: PathBuf,
@@ -114,6 +116,7 @@ impl ReleasePaths {
             punctuation_inventory: punctuation_source_dir.join("source-inventory.sha256"),
             punctuation_cin: cfg.root.join(PUNCTUATION_VENDOR_PATH),
             symbol_overlay_symbols: cfg.root.join(SYMBOL_OVERLAY_PATH),
+            symbol_overlay_alternatives: cfg.root.join(SYMBOL_OVERLAY_ALTERNATIVES_PATH),
             prepopulated_service_inventory: prepopulated_service_source_dir
                 .join("source-inventory.sha256"),
             canned_messages_plist: cfg.root.join(CANNED_MESSAGES_VENDOR_PATH),
