@@ -40,7 +40,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Collect Google Trends observations
         id: collect
@@ -73,7 +73,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -125,9 +125,9 @@ jobs:
         run: cargo run --release -- prepare-release
 
       - name: Open pull request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
-          branch: codex/auto-hotwords
+          branch: ci/auto-hotwords
           delete-branch: true
           commit-message: "chore(hotwords): refresh auto overlay"
           title: "chore(hotwords): refresh auto overlay"
@@ -135,4 +135,3 @@ jobs:
           add-paths: |
             sources/chiakey-auto-hotwords-overlay/phrases.tsv
             sources/chiakey-auto-hotwords-overlay/state.json
-            sources/chiakey-auto-hotwords-overlay/source-inventory.sha256

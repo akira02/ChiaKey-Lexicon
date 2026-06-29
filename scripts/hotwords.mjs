@@ -9,6 +9,7 @@ const DEFAULT_HL = "zh-TW";
 const DEFAULT_RETENTION_DAYS = 30;
 const DEFAULT_STATE_WINDOW_DAYS = 90;
 const MIN_EMIT_SIGNAL = 3;
+const MAX_SEGMENT_DERIVATION_SURFACE_LENGTH = 8;
 
 const WINDOWS = [
   { label: "24h", hours: 24, score: 1 },
@@ -26,9 +27,18 @@ const QUERY_LIKE_TERMS = [
   "戰績",
   "開獎",
   "匯率",
+  "直播",
 ];
 
+const CORE_CANDIDATE_SUFFIXES = [
+  "路況",
+  "車禍",
+];
+
+const DERIVED_SEGMENT_STOP_CHARS = new Set(["對", "的", "是", "嗎"]);
+
 const PHRASE_REPLACEMENTS = [
+  ["世界杯", "世界盃"],
   ["台湾", "台灣"],
   ["新闻", "新聞"],
   ["台风", "颱風"],
@@ -66,6 +76,25 @@ const CHAR_REPLACEMENTS = new Map([
   ["师", "師"],
   ["报", "報"],
   ["华", "華"],
+  ["县", "縣"],
+  ["陈", "陳"],
+  ["凤", "鳳"],
+  ["积", "積"],
+  ["胶", "膠"],
+  ["军", "軍"],
+  ["张", "張"],
+  ["吴", "吳"],
+  ["东", "東"],
+  ["谚", "諺"],
+  ["贤", "賢"],
+  ["绮", "綺"],
+  ["农", "農"],
+  ["贴", "貼"],
+  ["习", "習"],
+  ["视", "視"],
+  ["导", "導"],
+  ["体", "體"],
+  ["矶", "磯"],
 ]);
 
 const USAGE = `Usage:
@@ -165,7 +194,7 @@ async function refresh(options) {
   const observations = loadObservations(observationsDir);
   const state = loadState(statePath);
   const lexicon = loadLexicon(normalizedPath, sourceId);
-  const aggregate = mergeState(state, observations, today);
+  const aggregate = mergeState(state, observations, today, lexicon);
   const result = buildOverlayRows(aggregate, lexicon, today, sourceId);
   const outputState = filterStateByTerms(aggregate, result.watchlistTerms);
 
@@ -288,12 +317,13 @@ function loadState(file) {
       seen_dates: Array.isArray(value.seen_dates) ? value.seen_dates.filter(isDateOnly) : [],
       seen_windows: normalizeSeenWindows(value.seen_windows, value.seen_dates),
       max_traffic: numberOrNull(value.max_traffic),
+      derived_from: Array.isArray(value.derived_from) ? value.derived_from.map(normalizeTerm).filter(Boolean) : [],
     });
   }
   return state;
 }
 
-function mergeState(state, observations, today) {
+function mergeState(state, observations, today, lexicon) {
   const merged = new Map();
   for (const [term, value] of state.entries()) {
     merged.set(term, {
@@ -302,31 +332,14 @@ function mergeState(state, observations, today) {
       seen_dates: new Set(value.seen_dates || []),
       seen_windows: mapSeenWindowsToSets(value.seen_windows || {}),
       max_traffic: value.max_traffic || 0,
+      derived_from: new Set(value.derived_from || []),
     });
   }
 
   for (const observation of observations) {
-    const term = normalizeTerm(observation.term);
-    if (!term || !isHanOnly(term) || hasAsciiAlnum(term)) {
-      continue;
+    for (const candidate of observationCandidates(observation, lexicon)) {
+      mergeObservation(merged, candidate);
     }
-    const entry =
-      merged.get(term) ||
-      {
-        first_seen: observation.observed_on,
-        last_seen: observation.observed_on,
-        seen_dates: new Set(),
-        seen_windows: {},
-        max_traffic: 0,
-      };
-    entry.seen_dates.add(observation.observed_on);
-    const windowLabel = observation.window_label || windowLabelForHours(observation.window_hours || 24);
-    entry.seen_windows[windowLabel] ||= new Set();
-    entry.seen_windows[windowLabel].add(observation.observed_on);
-    entry.first_seen = minDate(entry.first_seen, observation.observed_on);
-    entry.last_seen = maxDate(entry.last_seen, observation.observed_on);
-    entry.max_traffic = Math.max(entry.max_traffic || 0, observation.traffic || 0);
-    merged.set(term, entry);
   }
 
   const cutoff = addDays(today, -DEFAULT_STATE_WINDOW_DAYS);
@@ -338,6 +351,139 @@ function mergeState(state, observations, today) {
     }
   }
   return merged;
+}
+
+function observationCandidates(observation, lexicon) {
+  const term = normalizeTerm(observation.term);
+  if (!term || !isHanOnly(term) || hasAsciiAlnum(term)) {
+    return [];
+  }
+  return dedupeObservationCandidates([
+    observationWithTerm(observation, term),
+    ...deriveCoreCandidates(observation, term, lexicon),
+    ...deriveSegmentCandidates(observation, term, lexicon),
+  ]);
+}
+
+function deriveCoreCandidates(observation, term, lexicon) {
+  const tokens = tokenize(term, lexicon);
+  if (tokens.join("") !== term || tokens.length < 2) {
+    return [];
+  }
+  const suffix = CORE_CANDIDATE_SUFFIXES.find((item) => tokens.at(-1) === item);
+  if (!suffix) {
+    return [];
+  }
+  const core = tokens.slice(0, -1).join("");
+  const coreLength = Array.from(core).length;
+  if (coreLength < 2 || coreLength > 4 || isQueryLikeTerm(core)) {
+    return [];
+  }
+  return [
+    {
+      ...observationWithTerm(observation, core),
+      derived_from: term,
+      derived_suffix: suffix,
+    },
+  ];
+}
+
+function deriveSegmentCandidates(observation, term, lexicon) {
+  const termLength = Array.from(term).length;
+  if (termLength <= 4 || termLength > MAX_SEGMENT_DERIVATION_SURFACE_LENGTH || isQueryLikeTerm(term)) {
+    return [];
+  }
+  const tokens = tokenize(term, lexicon);
+  if (tokens.join("") !== term || tokens.length < 2) {
+    return [];
+  }
+
+  const candidates = [];
+  for (const run of unknownTokenRuns(tokens)) {
+    const candidate = run.join("");
+    const candidateLength = Array.from(candidate).length;
+    if (
+      candidateLength >= 2 &&
+      candidateLength <= 4 &&
+      candidate !== term &&
+      !isQueryLikeTerm(candidate) &&
+      !hasDerivedSegmentStopChar(candidate)
+    ) {
+      candidates.push({
+        ...observationWithTerm(observation, candidate),
+        derived_from: term,
+      });
+    }
+  }
+  return candidates;
+}
+
+function hasDerivedSegmentStopChar(candidate) {
+  return Array.from(candidate).some((character) => DERIVED_SEGMENT_STOP_CHARS.has(character));
+}
+
+function unknownTokenRuns(tokens) {
+  const runs = [];
+  let current = [];
+  for (const token of tokens) {
+    if (Array.from(token).length === 1) {
+      current.push(token);
+    } else if (current.length > 0) {
+      runs.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) {
+    runs.push(current);
+  }
+  return runs;
+}
+
+function dedupeObservationCandidates(candidates) {
+  const byTerm = new Map();
+  for (const candidate of candidates) {
+    const term = normalizeTerm(candidate.term);
+    if (!term || byTerm.has(term)) {
+      continue;
+    }
+    byTerm.set(term, candidate);
+  }
+  return [...byTerm.values()];
+}
+
+function observationWithTerm(observation, term) {
+  return {
+    ...observation,
+    term,
+  };
+}
+
+function mergeObservation(merged, observation) {
+  const term = normalizeTerm(observation.term);
+  if (!term || !isHanOnly(term) || hasAsciiAlnum(term)) {
+    return;
+  }
+  const entry =
+    merged.get(term) ||
+    {
+      first_seen: observation.observed_on,
+      last_seen: observation.observed_on,
+      seen_dates: new Set(),
+      seen_windows: {},
+      max_traffic: 0,
+      derived_from: new Set(),
+    };
+  entry.seen_dates.add(observation.observed_on);
+  const windowLabel = observation.window_label || windowLabelForHours(observation.window_hours || 24);
+  entry.seen_windows[windowLabel] ||= new Set();
+  entry.seen_windows[windowLabel].add(observation.observed_on);
+  entry.first_seen = minDate(entry.first_seen, observation.observed_on);
+  entry.last_seen = maxDate(entry.last_seen, observation.observed_on);
+  entry.max_traffic = Math.max(entry.max_traffic || 0, observation.traffic || 0);
+  if (observation.derived_from) {
+    entry.derived_from.add(observation.derived_from);
+  }
+  merged.set(term, entry);
 }
 
 function buildOverlayRows(state, lexicon, today, sourceId) {
@@ -364,7 +510,7 @@ function buildOverlayRows(state, lexicon, today, sourceId) {
       filtered.too_short_or_long.push(term);
       continue;
     }
-    if (QUERY_LIKE_TERMS.some((needle) => term.includes(needle))) {
+    if (isQueryLikeTerm(term)) {
       filtered.query_like.push(term);
       continue;
     }
@@ -400,21 +546,26 @@ function buildOverlayRows(state, lexicon, today, sourceId) {
     const seenLast14 = countSeenSince(entry.seen_dates, addDays(today, -13));
     const seenLast30 = countSeenSince(entry.seen_dates, addDays(today, -29));
     const weight = weightFor({ daysSinceSeen, signal14: signal.score14, signal30: signal.score30 });
+    const tags = [
+      sourceId,
+      "auto",
+      "google-trends",
+      `first_seen=${entry.first_seen}`,
+      `last_seen=${entry.last_seen}`,
+      `seen_days_30=${seenLast30}`,
+      `signal_14=${signal.score14}`,
+      `signal_30=${signal.score30}`,
+      `windows_14=${signal.windows14.join("+")}`,
+      `max_traffic=${entry.max_traffic || 0}`,
+    ];
+    const derivedFrom = sortedDerivedFrom(entry).slice(0, 3);
+    if (derivedFrom.length > 0) {
+      tags.push(`derived_from=${derivedFrom.join("+")}`);
+    }
     rows.push({
       phrase: term,
       weight,
-      tags: [
-        sourceId,
-        "auto",
-        "google-trends",
-        `first_seen=${entry.first_seen}`,
-        `last_seen=${entry.last_seen}`,
-        `seen_days_30=${seenLast30}`,
-        `signal_14=${signal.score14}`,
-        `signal_30=${signal.score30}`,
-        `windows_14=${signal.windows14.join("+")}`,
-        `max_traffic=${entry.max_traffic || 0}`,
-      ].join(","),
+      tags: tags.join(","),
     });
   }
   return { rows, filtered, watchlistTerms };
@@ -513,6 +664,10 @@ function canInferQstring(term, lexicon) {
   });
 }
 
+function isQueryLikeTerm(term) {
+  return [...QUERY_LIKE_TERMS, ...CORE_CANDIDATE_SUFFIXES].some((needle) => term.includes(needle));
+}
+
 function signalFor(entry, today) {
   const cutoff14 = addDays(today, -13);
   const cutoff30 = addDays(today, -29);
@@ -589,6 +744,10 @@ function buildStatePayload(state, today) {
       signal_30: signal.score30,
       max_traffic: entry.max_traffic || 0,
     };
+    const derivedFrom = sortedDerivedFrom(entry);
+    if (derivedFrom.length > 0) {
+      terms[term].derived_from = derivedFrom.slice(0, 10);
+    }
   }
   return {
     schema_version: 2,
@@ -597,6 +756,10 @@ function buildStatePayload(state, today) {
     retention_days: DEFAULT_RETENTION_DAYS,
     terms,
   };
+}
+
+function sortedDerivedFrom(entry) {
+  return [...(entry.derived_from || [])].sort();
 }
 
 function filterStateByTerms(state, kept) {
@@ -611,6 +774,10 @@ function filterStateByTerms(state, kept) {
 
 function buildSummary({ today, observations, rows, filtered, stateTerms, sourceId }) {
   const lines = [];
+  const filteredCounts = Object.entries(filtered)
+    .map(([reason, values]) => `${reason}=${values.length}`)
+    .join(", ");
+
   lines.push(`# Auto Hotwords Refresh`);
   lines.push("");
   lines.push(`- Date: ${today}`);
@@ -618,35 +785,43 @@ function buildSummary({ today, observations, rows, filtered, stateTerms, sourceI
   lines.push(`- Observations loaded: ${observations.length}`);
   lines.push(`- State terms retained: ${stateTerms}`);
   lines.push(`- Overlay rows: ${rows.length}`);
+  lines.push(`- Filtered terms: ${filteredCounts}`);
   lines.push(
     `- Observation windows: ${Object.entries(countObservationsByWindow(observations))
       .map(([label, count]) => `${label}=${count}`)
       .join(", ")}`,
   );
   lines.push("");
-  lines.push("## Proposed Overlay");
-  lines.push("");
-  if (rows.length === 0) {
-    lines.push("No rows emitted.");
-  } else {
-    for (const row of rows) {
-      lines.push(`- ${row.phrase} (${row.weight})`);
-    }
-  }
-  lines.push("");
-  lines.push("## Filtered");
+
+  appendDetails(
+    lines,
+    `Proposed overlay (${rows.length})`,
+    rows.length === 0 ? ["No rows emitted."] : rows.map((row) => `- ${row.phrase} (${row.weight})`),
+  );
+
   for (const [reason, values] of Object.entries(filtered)) {
-    lines.push("");
-    lines.push(`### ${reason} (${values.length})`);
+    const body = [];
     for (const value of values.slice(0, 80)) {
-      lines.push(`- ${value}`);
+      body.push(`- ${value}`);
     }
     if (values.length > 80) {
-      lines.push(`- ... ${values.length - 80} more`);
+      body.push(`- ... ${values.length - 80} more`);
     }
+    appendDetails(lines, `Filtered: ${reason} (${values.length})`, body.length ? body : ["No terms."]);
   }
+
   lines.push("");
   return `${lines.join("\n")}\n`;
+}
+
+function appendDetails(lines, summary, body) {
+  lines.push(`<details>`);
+  lines.push(`<summary>${summary}</summary>`);
+  lines.push("");
+  lines.push(...body);
+  lines.push("");
+  lines.push(`</details>`);
+  lines.push("");
 }
 
 function countObservationsByWindow(observations) {
