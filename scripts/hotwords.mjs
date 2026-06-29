@@ -9,6 +9,7 @@ const DEFAULT_HL = "zh-TW";
 const DEFAULT_RETENTION_DAYS = 30;
 const DEFAULT_STATE_WINDOW_DAYS = 90;
 const MIN_EMIT_SIGNAL = 3;
+const MAX_SEGMENT_DERIVATION_SURFACE_LENGTH = 8;
 
 const WINDOWS = [
   { label: "24h", hours: 24, score: 1 },
@@ -33,6 +34,8 @@ const CORE_CANDIDATE_SUFFIXES = [
   "路況",
   "車禍",
 ];
+
+const DERIVED_SEGMENT_STOP_CHARS = new Set(["對", "的", "是", "嗎"]);
 
 const PHRASE_REPLACEMENTS = [
   ["世界杯", "世界盃"],
@@ -88,6 +91,10 @@ const CHAR_REPLACEMENTS = new Map([
   ["农", "農"],
   ["贴", "貼"],
   ["习", "習"],
+  ["视", "視"],
+  ["导", "導"],
+  ["体", "體"],
+  ["矶", "磯"],
 ]);
 
 const USAGE = `Usage:
@@ -351,7 +358,11 @@ function observationCandidates(observation, lexicon) {
   if (!term || !isHanOnly(term) || hasAsciiAlnum(term)) {
     return [];
   }
-  return [observationWithTerm(observation, term), ...deriveCoreCandidates(observation, term, lexicon)];
+  return dedupeObservationCandidates([
+    observationWithTerm(observation, term),
+    ...deriveCoreCandidates(observation, term, lexicon),
+    ...deriveSegmentCandidates(observation, term, lexicon),
+  ]);
 }
 
 function deriveCoreCandidates(observation, term, lexicon) {
@@ -375,6 +386,69 @@ function deriveCoreCandidates(observation, term, lexicon) {
       derived_suffix: suffix,
     },
   ];
+}
+
+function deriveSegmentCandidates(observation, term, lexicon) {
+  const termLength = Array.from(term).length;
+  if (termLength <= 4 || termLength > MAX_SEGMENT_DERIVATION_SURFACE_LENGTH || isQueryLikeTerm(term)) {
+    return [];
+  }
+  const tokens = tokenize(term, lexicon);
+  if (tokens.join("") !== term || tokens.length < 2) {
+    return [];
+  }
+
+  const candidates = [];
+  for (const run of unknownTokenRuns(tokens)) {
+    const candidate = run.join("");
+    const candidateLength = Array.from(candidate).length;
+    if (
+      candidateLength >= 2 &&
+      candidateLength <= 4 &&
+      candidate !== term &&
+      !isQueryLikeTerm(candidate) &&
+      !hasDerivedSegmentStopChar(candidate)
+    ) {
+      candidates.push({
+        ...observationWithTerm(observation, candidate),
+        derived_from: term,
+      });
+    }
+  }
+  return candidates;
+}
+
+function hasDerivedSegmentStopChar(candidate) {
+  return Array.from(candidate).some((character) => DERIVED_SEGMENT_STOP_CHARS.has(character));
+}
+
+function unknownTokenRuns(tokens) {
+  const runs = [];
+  let current = [];
+  for (const token of tokens) {
+    if (Array.from(token).length === 1) {
+      current.push(token);
+    } else if (current.length > 0) {
+      runs.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) {
+    runs.push(current);
+  }
+  return runs;
+}
+
+function dedupeObservationCandidates(candidates) {
+  const byTerm = new Map();
+  for (const candidate of candidates) {
+    const term = normalizeTerm(candidate.term);
+    if (!term || byTerm.has(term)) {
+      continue;
+    }
+    byTerm.set(term, candidate);
+  }
+  return [...byTerm.values()];
 }
 
 function observationWithTerm(observation, term) {
